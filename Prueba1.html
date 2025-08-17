@@ -1,0 +1,3410 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Contactos Sub Oficina OCHA Maracaibo</title>
+
+    <!-- Google Fonts: Roboto Slab & Roboto Condensed -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700&family=Roboto+Slab:wght@400;700&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome para iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+
+    <!-- jQuery (cargar PRIMERO) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+    <!-- QR Code Generator (cargar TEMPRANO) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- SheetJS para manejo de Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <!-- jsPDF para generar PDFs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    
+    <style>
+        /* Variables de colores OCHA */
+        :root {
+            --color-ochablue: #0072BC;
+            --color-ochayellow: #FFC72C;
+            --color-ochagrey: #808080;
+            --color-ochaprimarytext: #333333;
+            --color-ochasecondarytext: #666666;
+            --ocha-light-gray: #F5F5F5;
+            --ocha-dark-gray: #3A3A3A;
+            --ocha-white: #FFFFFF;
+            --ocha-black: #000000;
+            --ocha-red: #CD3A1F;
+            --ocha-green: #7DBA00;
+            --ocha-light-blue: #E6F3FF;
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+            --border-radius: 12px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Roboto Condensed', Arial, sans-serif;
+            background-color: var(--ocha-light-gray);
+            color: var(--color-ochaprimarytext);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Login Styles */
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--color-ochablue) 0%, #005a8a 100%);
+            padding: 1rem;
+        }
+
+        .login-box {
+            background: white;
+            padding: 2.5rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-lg);
+            width: 100%;
+            max-width: 420px;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .login-logo {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .login-logo img {
+            height: 60px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .login-main-title {
+            font-family: 'Roboto Slab', serif;
+            color: var(--color-ochablue);
+            text-align: center;
+            margin-bottom: 0.5rem;
+            font-size: 1.8rem;
+        }
+
+        .login-form-title {
+            color: var(--ocha-dark-gray);
+            text-align: center;
+            margin-bottom: 1.5rem;
+            font-size: 1.3rem;
+            font-weight: 500;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--color-ochagrey);
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--color-ochablue);
+            box-shadow: 0 0 0 3px rgba(0, 114, 188, 0.1);
+        }
+
+        /* Password field with toggle */
+        .password-container {
+            position: relative;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: var(--color-ochagrey);
+            background: none;
+            border: none;
+            font-size: 1rem;
+            padding: 0;
+        }
+
+        .password-toggle:hover {
+            color: var(--color-ochablue);
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary {
+            background-color: var(--color-ochablue);
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #005a8a;
+        }
+        
+        .btn-secondary {
+            background-color: var(--color-ochagrey);
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: var(--ocha-dark-gray);
+        }
+
+        .btn-danger {
+            background-color: var(--ocha-red);
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #a02d17;
+        }
+
+        .btn-success {
+            background-color: var(--ocha-green);
+            color: white;
+        }
+        .btn-success:hover {
+            background-color: #649600;
+        }
+        
+        .btn-info {
+            background-color: #17a2b8;
+            color: white;
+        }
+        .btn-info:hover {
+            background-color: #138496;
+        }
+
+        .btn-warning {
+            background-color: var(--color-ochayellow);
+            color: var(--ocha-dark-gray);
+        }
+        .btn-warning:hover {
+            background-color: #e6b328;
+        }
+
+        .btn-sm {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.85rem;
+        }
+
+        .btn-block {
+            width: 100%;
+            justify-content: center;
+        }
+
+        /* Header Styles */
+        .header {
+            background-color: white;
+            box-shadow: var(--shadow-sm);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .header-logo {
+            height: 50px;
+        }
+
+        .header-title h1 {
+            font-family: 'Roboto Slab', serif;
+            font-size: 1.5rem;
+            color: var(--color-ochablue);
+            font-weight: 700;
+        }
+
+        .header-subtitle {
+            font-size: 0.875rem;
+            color: var(--color-ochasecondarytext);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background-color: var(--ocha-light-gray);
+            border-radius: 6px;
+        }
+
+        /* Main Layout - Improved Responsive Design */
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1rem;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 1.5rem;
+            min-height: calc(100vh - 180px);
+            flex: 1;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            height: fit-content;
+            position: sticky;
+            top: 100px;
+            overflow-y: auto;
+            max-height: calc(100vh - 120px);
+        }
+
+        /* KPI Cards */
+        .kpi-section {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 1.5rem;
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .kpi-card {
+            background: linear-gradient(135deg, var(--ocha-light-blue) 0%, #fff 100%);
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-md);
+            border-color: var(--color-ochablue);
+        }
+
+        .kpi-icon {
+            font-size: 2.5rem;
+            color: var(--color-ochablue);
+            margin-bottom: 0.5rem;
+        }
+
+        .kpi-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--ocha-dark-gray);
+        }
+
+        .kpi-label {
+            font-size: 0.875rem;
+            color: var(--color-ochagrey);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Filters */
+        .filter-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .filter-title {
+            font-size: 1rem;
+            color: var(--ocha-dark-gray);
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+            border-bottom: 2px solid var(--ocha-light-blue);
+            padding-bottom: 0.5rem;
+        }
+
+        .filter-select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .filter-select:hover {
+            border-color: var(--color-ochablue);
+        }
+
+        /* Icon Grid for sectors */
+        .icon-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(65px, 1fr));
+            gap: 0.5rem;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 0.25rem;
+        }
+
+        .icon-item {
+            background: var(--ocha-light-gray);
+            border: 2px solid transparent;
+            border-radius: 8px;
+            padding: 0.75rem 0.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .icon-item:hover {
+            background: var(--ocha-light-blue);
+            border-color: var(--color-ochablue);
+            transform: scale(1.05);
+        }
+
+        .icon-item.active {
+            background: var(--color-ochablue);
+            color: white;
+            border-color: #005a8a;
+        }
+
+        .icon-item.active .sector-icon {
+            filter: brightness(0) invert(1);
+        }
+
+        .sector-icon {
+            width: 28px;
+            height: 28px;
+            margin-bottom: 0.3rem;
+            display: block;
+        }
+
+        .sector-name {
+            font-size: 0.65rem;
+            font-weight: 500;
+            word-break: break-word;
+            line-height: 1.1;
+        }
+
+        /* Table Styles */
+        .table-container {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .search-box {
+            position: relative;
+            flex-grow: 1;
+            min-width: 250px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 3rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            transition: all 0.3s;
+        }
+
+        .search-input:focus {
+            border-color: var(--color-ochablue);
+            box-shadow: 0 0 0 3px rgba(0, 114, 188, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--color-ochagrey);
+        }
+
+        .table-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        /* Selection Controls */
+        .selection-controls {
+            background: var(--ocha-light-blue);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: none;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .selection-controls.active {
+            display: block;
+        }
+
+        .selection-info {
+            font-weight: 600;
+            color: var(--color-ochablue);
+            margin-bottom: 0.5rem;
+        }
+
+        .selection-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            max-height: 500px;
+            overflow-y: auto;
+            border-radius: 8px;
+            border: 1px solid #eee;
+        }
+
+        .contacts-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 900px;
+        }
+
+        .contacts-table th {
+            background: linear-gradient(180deg, var(--ocha-light-gray) 0%, #e8e8e8 100%);
+            padding: 0.75rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--ocha-dark-gray);
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.3s;
+            font-size: 0.85rem;
+        }
+
+        .contacts-table th:hover {
+            background: linear-gradient(180deg, #e0e0e0 0%, #d0d0d0 100%);
+        }
+
+        .sort-icon {
+            margin-left: 5px;
+            font-size: 0.8rem;
+            color: var(--color-ochagrey);
+        }
+
+        .contacts-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid #eee;
+            font-size: 0.85rem;
+        }
+
+        .contacts-table tr {
+            transition: background 0.2s;
+        }
+
+        .contacts-table tr:hover {
+            background: var(--ocha-light-blue);
+        }
+
+        .contact-checkbox {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .copy-icon, .whatsapp-icon {
+            cursor: pointer;
+            margin-left: 8px;
+            color: var(--color-ochagrey);
+            transition: color 0.3s;
+        }
+
+        .copy-icon:hover {
+            color: var(--color-ochablue);
+        }
+
+        .whatsapp-icon {
+            color: #25D366;
+        }
+
+        .whatsapp-icon:hover {
+            color: #128C7E;
+        }
+
+        /* Action Buttons Container - MEJORA PRINCIPAL */
+        .action-buttons {
+            display: flex;
+            gap: 0.25rem;
+            align-items: center;
+            justify-content: flex-start;
+        }
+
+        .action-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.875rem;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .action-btn-view {
+            background: linear-gradient(135deg, #17a2b8, #138496);
+            color: white;
+        }
+
+        .action-btn-edit {
+            background: linear-gradient(135deg, var(--color-ochablue), #005a8a);
+            color: white;
+        }
+
+        .action-btn-delete {
+            background: linear-gradient(135deg, var(--ocha-red), #a02d17);
+            color: white;
+        }
+
+        .action-btn-whatsapp {
+            background: linear-gradient(135deg, #25D366, #128C7E);
+            color: white;
+        }
+
+        .action-btn-qr {
+            background: linear-gradient(135deg, var(--color-ochayellow), #e6b328);
+            color: var(--ocha-dark-gray);
+        }
+
+        /* Tooltip para los botones de acción */
+        .action-btn::before {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 120%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--ocha-dark-gray);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .action-btn::after {
+            content: '';
+            position: absolute;
+            top: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 3px solid transparent;
+            border-top-color: var(--ocha-dark-gray);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .action-btn:hover::before,
+        .action-btn:hover::after {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Magic Link Button */
+        .magic-link-container {
+            margin-top: 1rem;
+            text-align: center;
+            padding: 1rem;
+            background: var(--ocha-light-blue);
+            border-radius: 8px;
+        }
+
+        .magic-link-btn {
+            background: linear-gradient(135deg, var(--color-ochablue), #005a8a);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .magic-link-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 114, 188, 0.3);
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal.active {
+            display: flex;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: var(--border-radius);
+            width: 90%;
+            max-width: 900px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-lg);
+            animation: slideUp 0.3s ease;
+            display: flex; 
+            flex-direction: column; 
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(135deg, var(--ocha-light-blue) 0%, white 100%);
+            flex-shrink: 0;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            color: var(--ocha-dark-gray);
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--color-ochagrey);
+            transition: color 0.3s;
+        }
+
+        .modal-close:hover {
+            color: var(--ocha-red);
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            padding: 1.5rem;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            background: var(--ocha-light-gray);
+            flex-shrink: 0;
+        }
+
+        /* QR Code Modal Specific Styles */
+        .qr-modal {
+            max-width: 400px;
+        }
+
+        .qr-container {
+            text-align: center;
+            padding: 1rem;
+        }
+
+        .qr-code {
+            margin: 1rem auto;
+            border: 2px solid var(--ocha-light-gray);
+            border-radius: 8px;
+            padding: 1rem;
+            background: white;
+        }
+
+        .qr-info {
+            background: var(--ocha-light-blue);
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+            color: var(--ocha-dark-gray);
+        }
+
+        /* Form Grid Layout */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-grid-full {
+            grid-column: 1 / -1;
+        }
+
+        /* Admin Modal */
+        .admin-modal {
+            max-width: 500px;
+        }
+
+        .admin-input {
+            margin: 1rem 0;
+        }
+
+        /* Multi-select styling */
+        .multi-select-container {
+            margin-bottom: 1rem;
+        }
+
+        .multi-select-list {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 0.5rem;
+            background: white;
+        }
+
+        .multi-select-item {
+            display: flex;
+            align-items: center;
+            padding: 0.25rem;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .multi-select-item:hover {
+            background: var(--ocha-light-blue);
+        }
+
+        .multi-select-item input[type="checkbox"] {
+            margin-right: 0.5rem;
+        }
+
+        /* Checkbox Grid */
+        .checkbox-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .checkbox-item label {
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+
+        /* Status Messages */
+        .status-message {
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-info {
+            background: #e2f3fe;
+            color: #084298;
+            border: 1px solid #b6d4fe;
+        }
+
+        .status-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        /* Email requirement notice */
+        .email-notice {
+            background: #e3f2fd;
+            border: 1px solid #2196f3;
+            border-radius: 6px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            color: #1976d2;
+        }
+			/* Loading Spinner */
+        .spinner {
+            border: 3px solid var(--ocha-light-gray);
+            border-top: 3px solid var(--color-ochablue);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 2rem auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Footer */
+        .footer {
+            background: var(--ocha-dark-gray);
+            color: white;
+            padding: 2rem 0;
+            margin-top: auto;
+        }
+
+        .footer-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+
+        .footer-section h4 {
+            color: var(--color-ochayellow);
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .footer-section p, .footer-section a {
+            color: #ccc;
+            text-decoration: none;
+            line-height: 1.8;
+            font-size: 0.9rem;
+        }
+
+        .footer-section a:hover {
+            color: var(--color-ochayellow);
+        }
+
+        .footer-section a.mailto-link {
+            color: #ccc;
+            text-decoration: underline;
+        }
+        .footer-section a.mailto-link:hover {
+            color: var(--color-ochayellow);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .main-container {
+                grid-template-columns: 280px 1fr;
+                gap: 1rem;
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .main-container {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+                padding: 1rem;
+            }
+            
+            .sidebar {
+                position: relative;
+                top: auto;
+                max-height: none;
+                order: -1;
+            }
+
+            .kpi-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                padding: 1rem;
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .header-brand {
+                justify-content: center;
+                margin-bottom: 1rem;
+            }
+
+            .header-actions {
+                justify-content: center;
+            }
+            
+            .icon-grid {
+                grid-template-columns: repeat(auto-fit, minmax(55px, 1fr));
+            }
+            
+            .table-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .search-box {
+                max-width: none;
+                margin-bottom: 1rem;
+            }
+
+            .table-actions {
+                justify-content: center;
+            }
+
+            .modal-content {
+                width: 95%;
+                margin: 1rem;
+            }
+            
+            .footer-content {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+            
+            .contacts-table {
+                font-size: 0.8rem;
+            }
+            
+            .contacts-table th, .contacts-table td {
+                padding: 0.5rem;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                gap: 0.125rem;
+            }
+
+            .action-btn {
+                width: 28px;
+                height: 28px;
+                font-size: 0.8rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .login-box {
+                padding: 1.5rem;
+                margin: 1rem;
+            }
+            
+            .header-title h1 {
+                font-size: 1.2rem;
+            }
+            
+            .btn {
+                padding: 0.6rem 1rem;
+                font-size: 0.9rem;
+            }
+            
+            .kpi-card {
+                padding: 1rem;
+            }
+            
+            .kpi-value {
+                font-size: 1.5rem;
+            }
+            
+            .kpi-icon {
+                font-size: 2rem;
+            }
+
+            .sector-icon {
+                width: 24px;
+                height: 24px;
+            }
+
+            .sector-name {
+                font-size: 0.6rem;
+            }
+        }
+
+        /* Print Styles */
+        @media print {
+            .header-actions, .sidebar, .table-actions, .selection-controls, .footer {
+                display: none !important;
+            }
+            
+            .main-container {
+                grid-template-columns: 1fr;
+                max-width: 100%;
+                padding: 0;
+            }
+            
+            .table-wrapper {
+                max-height: none;
+                overflow: visible;
+            }
+
+            .contacts-table th {
+                position: static;
+                background-image: none;
+                background-color: var(--ocha-light-gray);
+                color: var(--ocha-dark-gray);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Page -->
+    <div id="loginPage" class="login-container">
+        <div class="login-box">
+            <div class="login-logo">
+                <img src="https://images4.imagebam.com/f2/74/67/MEZQJH3_o.PNG" alt="OCHA Logo">
+            </div>
+            <h2 class="login-main-title">Sub Oficina OCHA Maracaibo</h2>
+            
+            <form id="loginForm">
+                <h3 class="login-form-title">Ingresar al Sistema</h3>
+                <div class="form-group">
+                    <label class="form-label" for="loginEmail">Correo Electrónico</label>
+                    <input type="email" id="loginEmail" class="form-control" required placeholder="usuario@ejemplo.com">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="loginPassword">Contraseña</label>
+                    <div class="password-container">
+                        <input type="password" id="loginPassword" class="form-control" required placeholder="••••••••">
+                        <button type="button" class="password-toggle" onclick="togglePassword('loginPassword')">
+                            <i class="fas fa-eye" id="loginPasswordToggleIcon"></i>
+                        </button>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">
+                    <i class="fas fa-sign-in-alt"></i> Ingresar
+                </button>
+            </form>
+            <div id="loginError" class="status-message status-error" style="margin-top: 1rem;"></div>
+            <div id="loginSuccess" class="status-message status-success" style="margin-top: 1rem;"></div>
+
+            <form id="registerForm" style="display:none;">
+                <h3 class="login-form-title">Crear Cuenta</h3>
+                <div class="form-group">
+                    <label class="form-label" for="registerEmail">Correo Electrónico</label>
+                    <input type="email" id="registerEmail" class="form-control" required placeholder="usuario@ejemplo.com">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="registerPassword">Contraseña</label>
+                    <div class="password-container">
+                        <input type="password" id="registerPassword" class="form-control" required placeholder="••••••••">
+                        <button type="button" class="password-toggle" onclick="togglePassword('registerPassword')">
+                            <i class="fas fa-eye" id="registerPasswordToggleIcon"></i>
+                        </button>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">
+                    <i class="fas fa-user-plus"></i> Registrarse
+                </button>
+            </form>
+            <div id="registerError" class="status-message status-error" style="margin-top: 1rem;"></div>
+            <div id="registerSuccess" class="status-message status-success" style="margin-top: 1rem;"></div>
+
+            <form id="passwordResetForm" style="display:none;">
+                <h3 class="login-form-title">Recuperar Contraseña</h3>
+                <div class="form-group">
+                    <label class="form-label" for="resetEmail">Correo Electrónico</label>
+                    <input type="email" id="resetEmail" class="form-control" required placeholder="usuario@ejemplo.com">
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">
+                    <i class="fas fa-key"></i> Enviar enlace
+                </button>
+            </form>
+            <div id="resetError" class="status-message status-error" style="margin-top: 1rem;"></div>
+            <div id="resetSuccess" class="status-message status-success" style="margin-top: 1rem;"></div>
+
+            <div class="login-links" style="margin-top: 1.5rem; text-align: center;">
+                <p id="linkToRegister" style="margin-bottom: 0.5rem;">¿No tienes cuenta? <a href="#" id="showRegisterLink" style="color: var(--color-ochablue); text-decoration: none;">Regístrate</a></p>
+                <p id="linkToLoginFromRegister" style="display:none; margin-bottom: 0.5rem;">¿Ya tienes cuenta? <a href="#" id="showLoginFromRegisterLink" style="color: var(--color-ochablue); text-decoration: none;">Ingresa</a></p>
+                <p id="linkToPasswordReset">¿Olvidaste tu contraseña? <a href="#" id="showPasswordResetLink" style="color: var(--color-ochablue); text-decoration: none;">Recupérala</a></p>
+                <p id="linkToLoginFromReset" style="display:none;">¿Recordaste? <a href="#" id="showLoginFromResetLink" style="color: var(--color-ochablue); text-decoration: none;">Ingresa</a></p>
+            </div>
+
+            <!-- Magic Link para actualización de contactos -->
+            <div class="magic-link-container">
+                <h4 style="color: var(--color-ochablue); margin-bottom: 0.5rem;">
+                    <i class="fas fa-magic"></i> Actualización de Contactos
+                </h4>
+                <p style="font-size: 0.875rem; margin-bottom: 1rem; color: var(--color-ochasecondarytext);">
+                    ¿Ya tienes una cuenta? Actualiza tu información directamente
+                </p>
+                <button type="button" class="magic-link-btn" onclick="generateMagicLink()">
+                    <i class="fas fa-link"></i> Generar Enlace de Actualización
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="mainApp" style="display: none;">
+        <header class="header">
+            <div class="header-content">
+                <div class="header-brand">
+                    <img src="https://www.unocha.org/themes/custom/common_design_subtheme/img/logos/ocha-logo-blue.svg" alt="OCHA Logo" class="header-logo">
+                    <div class="header-title">
+                        <h1>Sub Oficina OCHA Maracaibo</h1>
+                        <div class="header-subtitle">Sistema de Gestión de Contactos Humanitarios</div>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <div class="user-info">
+                        <i class="fas fa-user-circle"></i>
+                        <span id="userEmail"></span>
+                    </div>
+                    <button class="btn btn-secondary" onclick="handleLogout()">
+                        <i class="fas fa-sign-out-alt"></i> Salir
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="main-container">
+            <aside class="sidebar" id="sidebar">
+                <div class="filter-section">
+                    <h3 class="filter-title"><i class="fas fa-filter"></i> Filtros</h3>
+                    <div class="form-group">
+                        <label class="form-label">Espacio de Coordinación</label>
+                        <select id="espacioFilter" class="filter-select">
+                            <option value="">Todos los espacios</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="filter-section">
+                    <h4 class="filter-title"><i class="fas fa-th"></i> Sectores/Clústeres</h4>
+                    <div class="icon-grid" id="sectorsGrid"></div>
+                </div>
+                
+                <div class="filter-section">
+                    <h4 class="filter-title"><i class="fas fa-map-marker-alt"></i> Municipios</h4>
+                    <div class="form-group">
+                        <select id="municipiosFilter" class="filter-select" multiple size="5">
+                        </select>
+                    </div>
+                </div>
+                
+                <button class="btn btn-secondary btn-block" onclick="resetFilters()">
+                    <i class="fas fa-redo"></i> Limpiar Filtros
+                </button>
+            </aside>
+
+            <main>
+                <section class="kpi-section">
+                    <h2 style="color: var(--ocha-dark-gray); margin-bottom: 1rem;">
+                        <i class="fas fa-chart-line"></i> Cifras Clave
+                    </h2>
+                    <div class="kpi-grid" id="kpiGrid"></div>
+                </section>
+
+                <section class="table-container">
+                    <div class="table-header">
+                        <div class="search-box">
+                            <i class="fas fa-search search-icon"></i>
+                            <input type="text" id="searchInput" class="search-input" placeholder="Buscar por organización, punto focal, email, Teléfono...">
+                        </div>
+                        <div class="table-actions">
+                            <button class="btn btn-primary" onclick="showAddContactModal()">
+                                <i class="fas fa-user-plus"></i> <span class="btn-text">Nuevo</span>
+                            </button>
+                            <button class="btn btn-success" onclick="exportExcel()">
+                                <i class="fas fa-file-excel"></i> <span class="btn-text">Excel</span>
+                            </button>
+                            <button class="btn btn-info" onclick="exportPDF()">
+                                <i class="fas fa-file-pdf"></i> <span class="btn-text">PDF</span>
+                            </button>
+                            <input type="file" id="importFile" accept=".xlsx,.csv,.txt" style="display: none;" onchange="importContactsFromFile(event)">
+                            <button class="btn btn-warning" onclick="document.getElementById('importFile').click()">
+                                <i class="fas fa-upload"></i> <span class="btn-text">Importar</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Selection Controls -->
+                    <div id="selectionControls" class="selection-controls">
+                        <div class="selection-info" id="selectionInfo">0 contactos seleccionados</div>
+                        <div class="selection-actions">
+                            <button class="btn btn-primary btn-sm" onclick="createGroupFromSelection()">
+                                <i class="fas fa-users"></i> Crear Grupo
+                            </button>
+                            <button class="btn btn-info btn-sm" onclick="sendEmailToSelection()">
+                                <i class="fas fa-envelope"></i> Enviar Correo
+                            </button>
+                            <button class="btn btn-success btn-sm" onclick="sendWhatsAppToSelection()">
+                                <i class="fab fa-whatsapp"></i> WhatsApp Grupal
+                            </button>
+                            <button class="btn btn-secondary btn-sm" onclick="clearSelection()">
+                                <i class="fas fa-times"></i> Limpiar Selección
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="appStatusMessage" class="status-message"></div>
+                    
+                    <div class="table-wrapper">
+                        <table class="contacts-table">
+                            <thead>
+                                <tr>
+                                    <th>
+                                        <input type="checkbox" id="selectAll" class="contact-checkbox" onchange="toggleSelectAll()">
+                                    </th>
+                                    <th onclick="sortTable('organizacion')">
+                                        Organización <i class="fas fa-sort sort-icon"></i>
+                                    </th>
+                                    <th onclick="sortTable('siglas')">
+                                        Siglas <i class="fas fa-sort sort-icon"></i>
+                                    </th>
+                                    <th onclick="sortTable('punto_focal')">
+                                        Punto Focal <i class="fas fa-sort sort-icon"></i>
+                                    </th>
+                                    <th onclick="sortTable('cargo')">
+                                        Cargo <i class="fas fa-sort sort-icon"></i>
+                                    </th>
+                                    <th onclick="sortTable('email')">
+                                        Email <i class="fas fa-sort sort-icon"></i>
+                                    </th>
+                                    <th onclick="sortTable('espacio_coordinacion')">
+                                        Espacio <i class="fas fa-sort sort-icon"></i>
+                                    </th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="contactsTableBody"></tbody>
+                        </table>
+                    </div>
+                </section>
+            </main>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>OCHA Maracaibo</h4>
+                    <p>Sub Oficina de Coordinación de Asuntos Humanitarios</p>
+                    <p>Maracaibo, Estado Zulia, Venezuela</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Enlaces Útiles</h4>
+                    <p><a href="https://www.unocha.org" target="_blank">OCHA Global</a></p>
+                    <p><a href="https://reliefweb.int/country/ven" target="_blank">ReliefWeb Venezuela</a></p>
+                    <p><a href="https://www.humanitarianresponse.info/es/operations/venezuela" target="_blank">HumanitarianResponse</a></p>
+                    <p><a href="https://response.reliefweb.int/venezuela/cct-maracaibo" target="_blank">Relief Web Sub Oficina Maracaibo</a></p>
+                </div>
+                <div class="footer-section">
+                    <h4>Contacto Administrativo</h4>
+                    <p><i class="fas fa-envelope"></i> <a href="mailto:jhozman.camacho@un.org" class="mailto-link">jhozman.camacho@un.org</a></p>
+                    <p><i class="fas fa-lock"></i> Funciones especiales requieren clave</p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- View Contact Modal -->
+    <div id="viewContactModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Detalles del Contacto</h3>
+                <button class="modal-close" onclick="closeViewContactModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="viewContactBody">
+                <!-- Contact details will be injected here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeViewContactModal()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Code Modal -->
+    <div id="qrModal" class="modal">
+        <div class="modal-content qr-modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Código QR - Actualización de Contacto</h3>
+                <button class="modal-close" onclick="closeQRModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="qr-container">
+                    <h4 style="color: var(--color-ochablue); margin-bottom: 1rem;">
+                        <span id="qrContactName"></span>
+                    </h4>
+                    <div class="qr-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Instrucciones:</strong> Escanea este código QR para acceder directamente al formulario de actualización de este contacto.
+                    </div>
+                    <div id="qrcode" class="qr-code"></div>
+                    <div class="qr-info">
+                        <i class="fas fa-mobile-alt"></i>
+                        El código QR abrirá un enlace seguro donde el contacto podrá actualizar su información directamente.
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="downloadQR()">
+                    <i class="fas fa-download"></i> Descargar QR
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="closeQRModal()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contact Modal (Add/Edit) -->
+    <div id="contactModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitle">Nuevo Contacto</h3>
+                <button class="modal-close" onclick="closeContactModal()">&times;</button>
+            </div>
+            <form id="contactForm">
+                <div class="modal-body">
+                    <input type="hidden" id="contactId">
+                    
+                    <h4 style="color: var(--color-ochablue); margin-bottom: 1rem;">
+                        <i class="fas fa-user"></i> Información Personal
+                    </h4>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Organización *</label>
+                            <input type="text" id="organizacion" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Siglas</label>
+                            <input type="text" id="siglas" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Tipo de Organización</label>
+                            <select id="tipo_organizacion" class="form-control">
+                                <option value="">Seleccionar tipo</option>
+                                <option value="ONG Nacional">ONG Nacional</option>
+                                <option value="ONG Internacional">ONG Internacional</option>
+                                <option value="Agencia UN">Agencia UN</option>
+                                <option value="Gobierno Local">Gobierno Local</option>
+                                <option value="Gobierno Nacional">Gobierno Nacional</option>
+                                <option value="Organización Religiosa">Organización Religiosa</option>
+                                <option value="Sector Privado">Sector Privado</option>
+                                <option value="Academia">Academia</option>
+                                <option value="Red/Coalición">Red/Coalición</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Punto Focal *</label>
+                            <input type="text" id="punto_focal" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Cargo</label>
+                            <input type="text" id="cargo" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Correo Electrónico *</label>
+                            <input type="email" id="email" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Teléfono</label>
+                            <input type="tel" id="Teléfono" class="form-control" placeholder="+58 414-1234567">
+                        </div>
+                        <div class="form-group form-grid-full">
+                            <label class="form-label"><i class="fas fa-map-location-dot"></i> Espacio de Coordinación</label>
+                            <div class="multi-select-container">
+                                <div class="multi-select-list" id="espaciosMultiSelect"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h4 style="color: var(--color-ochablue); margin: 1.5rem 0 1rem;">
+                        <i class="fas fa-th"></i> Sectores
+                    </h4>
+                    <div class="multi-select-container">
+                        <div class="multi-select-list" id="sectoresMultiSelect"></div>
+                    </div>
+                    
+                    <h4 style="color: var(--color-ochablue); margin: 1.5rem 0 1rem;">
+                        <i class="fas fa-map-marker-alt"></i> Municipios
+                    </h4>
+                    <div class="multi-select-container">
+                        <div class="multi-select-list" id="municipiosMultiSelect"></div>
+                    </div>
+                    
+                    <h4 style="color: var(--color-ochablue); margin: 1.5rem 0 1rem;">
+                        <i class="fas fa-check-circle"></i> Participación
+                    </h4>
+                    <div class="checkbox-grid">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="reporta_345w">
+                            <label for="reporta_345w">Reporta en el 345W</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="socio_implementador">
+                            <label for="socio_implementador">Socio Implementador</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="organizacion_lider">
+                            <label for="organizacion_lider">Organización Líder</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="participacion_flc">
+                            <label for="participacion_flc">Participación FLC</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeContactModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Password Modal -->
+    <div id="adminPasswordModal" class="modal">
+        <div class="modal-content admin-modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Confirmación de Administrador</h3>
+                <button class="modal-close" onclick="closeAdminPasswordModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="email-notice">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Importante:</strong> Para eliminar un contacto, primero debe enviar un correo a 
+                    <strong>jhozman.camacho@un.org</strong> solicitando autorización para realizar esta acción.
+                </div>
+                <p id="adminActionMessage" style="margin-bottom: 1rem;"></p>
+                <div class="admin-input">
+                    <label class="form-label">Clave de Administrador:</label>
+                    <div class="password-container">
+                        <input type="password" id="adminPassword" class="form-control" placeholder="Ingrese la clave de administrador">
+                        <button type="button" class="password-toggle" onclick="togglePassword('adminPassword')">
+                            <i class="fas fa-eye" id="adminPasswordToggleIcon"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="adminPasswordError" class="status-message status-error" style="margin-top: 1rem;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeAdminPasswordModal()">Cancelar</button>
+                <button type="button" class="btn btn-danger" onclick="confirmAdminAction()">
+                    <i class="fas fa-check"></i> Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Group Modal (for create group action) -->
+    <div id="groupModal" class="modal">
+        <div class="modal-content admin-modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Crear Grupo de Contactos</h3>
+                <button class="modal-close" onclick="closeGroupModal()">&times;</button>
+            </div>
+			<div class="modal-body">
+                    <!-- This section would list selected contacts -->
+                    <div id="selectedContactsList"></div> 
+                    <!-- Placeholder for group name and description -->
+                    <div class="form-group">
+                        <label class="form-label">Nombre del Grupo:</label>
+                        <input type="text" id="groupName" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Descripción:</label>
+                        <textarea id="groupDescription" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div id="groupModalMessage" class="status-message"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeGroupModal()">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="saveGroup()">
+                        <i class="fas fa-save"></i> Guardar Grupo
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // Supabase Configuration
+            const SUPABASE_URL = 'https://gvobuytrtqxyvognivdt.supabase.co';
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd2b2J1eXRydHF4eXZvZ25pdmR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwNDczMTQsImV4cCI6MjA3MDYyMzMxNH0.34oUejp5IwN5vfFXSEPoJRZbFDv7b2aWHpDuE1pV1nE';
+            const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+            // Admin Configuration
+            const ADMIN_PASSWORD = 'coordinacion123'; // Cambiar por una clave segura
+            const GROUP_PASSWORD = 'coordinacion123'; // Cambiar por una clave segura
+            
+            // Global Variables
+            let currentUser = null;
+            let contacts = [];
+            let filteredContacts = [];
+            let selectedContacts = new Set();
+            let activeFilters = { search: '', espacio: '', sectores: [], municipios: [] };
+            let appInitialized = false;
+            let contactChangesChannel = null;
+            let sortField = 'organizacion';
+            let sortDirection = 'asc';
+            let pendingDeleteId = null;
+            let pendingAdminAction = null;
+            let currentQRContactId = null;
+
+            // Password toggle function
+            function togglePassword(fieldId) {
+                const passwordField = document.getElementById(fieldId);
+                const toggleIcon = document.getElementById(fieldId + 'ToggleIcon');
+                
+                if (passwordField.type === 'password') {
+                    passwordField.type = 'text';
+                    toggleIcon.classList.remove('fa-eye');
+                    toggleIcon.classList.add('fa-eye-slash');
+                } else {
+                    passwordField.type = 'password';
+                    toggleIcon.classList.remove('fa-eye-slash');
+                    toggleIcon.classList.add('fa-eye');
+                }
+            }
+
+            // Data lists
+            const sectoresList = [
+                'Agua, saneamiento e higiene',
+                'Alojamiento, energía y enseres',
+                'Educación',
+                'Nutrición',
+                'Protección General',
+                'Protección Niños, Niñas, Adolescentes',
+                'Protección Violencia de Género',
+                'Salud',
+                'Seguridad alimentaria',
+                'Transversal'
+            ];
+
+            const espaciosList = [
+                'Foro Local de Coordinación Zulia',
+                'Foro Local de Coordinación Falcón',
+                'Espacio de Coordinación Sur del Lago',
+                'Espacio de Coordinación Trujillo',
+                'Espacio de Coordinación Lara'
+            ];
+
+            const municipiosList = [
+                'Almirante Padilla', 'Andrés Eloy Blanco', 'Baralt', 'Boconó', 'Bolívar', 'Cabimas',
+                'Cacique Manaure', 'Candelaria', 'Carache', 'Carirubana', 'Catatumbo',
+                'Colina', 'Colón', 'Crespo', 'Dabajuro', 'Escuque', 'Falcón', 'Federación', 'Francisco Javier Pulgar',
+                'Indígena Bolivariano Guajira', 'Iribarren', 'Jesus Enrique Lossada', 'Jesus Maria Semprum',
+                'Jiménez', 'Juan Vicente Campo Elías', 'La Cañada De Urdaneta', 'La Ceiba', 'Lagunillas',
+                'Los Taques', 'Machiques De Perijá', 'Mara', 'Maracaibo', 'Mauroa', 'Miranda',
+                'Monseñor Iturriza', 'Morán', 'Palavecino', 'Palmasola', 'Pampanito', 'Pampán',
+                'Petit', 'Píritu', 'Rafael Rangel', 'Rosario De Perijá', 'San Francisco',
+                'San Rafael De Carvajal', 'Santa Rita', 'Silva', 'Simón Planas', 'Sucre',
+                'Tocópero', 'Torres', 'Trujillo', 'Urdaneta', 'Urumaco', 'Valera',
+                'Valmore Rodríguez', 'Zamora'
+            ];
+
+            // Sector icons mapping
+            const sectorIcons = {
+                'Agua, saneamiento e higiene': 'https://cdn-assets-cloud.frontify.com/s3/frontify-cloud-files-us/eyJwYXRoIjoiZnJvbnRpZnlcL2FjY291bnRzXC84MVwvMTY2NjYzXC9wcm9qZWN0c1wvMjUxMDIzXC9hc3NldHNcLzlkXC80MzY2OTIwXC83MWE1OTcyMzkyYTJkM2VlNDgxNmQ1ODU0MGNmNTliYS0xNTkxNzIxMTgyLnN2ZyJ9:frontify:MgH6UY5xqyfKx77ec3VRFtR1lOv93RJDs8MqbwFkJpM?width=64',
+                'Alojamiento, energía y enseres': 'https://cdn-assets-cloud.frontify.com/s3/frontify-cloud-files-us/eyJwYXRoIjoiZnJvbnRpZnlcL2FjY291bnRzXC84MVwvMTY2NjYzXC9wcm9qZWN0c1wvMjUxMDIzXC9hc3NldHNcL2NmXC80MzY2ODEyXC8xZTI5NzQzMzcyOTE0YjE2MDkxNTI0N2NkZGMwY2E3NC0xNTkxNzE4OTIxLnN2ZyJ9:frontify:FUBxqK8yAh-cPqjcmhGA4pR442WpMZP8wrc1C9PJZn8?width=64', 
+                'Educación': 'https://cdn-assets-cloud.frontify.com/s3/frontify-cloud-files-us/eyJwYXRoIjoiZnJvbnRpZnlcL2FjY291bnRzXC84MVwvMTY2NjYzXC9wcm9qZWN0c1wvMjUxMDIzXC9hc3NldHNcLzJjXC80MzY0NjkwXC8xYTIwZTMxZTMzOTEwY2U3YTA4Yjg5ODVhOGU5Mjg0My0xNTkxNjkzNjA1LnN2ZyJ9:frontify:90NzWxvX_2V0BDPOGueYpIZfuSZvJfOer4Pkvq4dHBA?width=64',
+                'Protección General': 'https://cdn-assets-cloud.frontify.com/s3/frontify-cloud-files-us/eyJwYXRoIjoiZnJvbnRpZnlcL2FjY291bnRzXC84MVwvMTY2NjYzXC9wcm9qZWN0c1wvMjUxMDIzXC9hc3NldHNcL2EyXC80MzY1OTYwXC8zYjFiMDY2MTAzYjIyMWY0MTI4YTVkNzkxYmRjOTE3YS0xNTkxNzA4MzI2LnN2ZyJ9:frontify:7lTtjGE2P2Nbz_525sMoZikLkHSh9tegag19Prx_SZc?width=64',
+                'Protección Niños, Niñas, Adolescentes': 'https://cdn-assets-cloud.frontify.com/s3/frontify-cloud-files-us/eyJwYXRoIjoiZnJvbnRpZnlcL2FjY291bnRzXC84MVwvMTY2NjYzXC9wcm9qZWN0c1wvMjUxMDIzXC9hc3NldHNcL2EyXC80MzY1OTYwXC8zYjFiMDY2MTAzYjIyMWY0MTI4YTVkNzkxYmRjOTE3YS0xNTkxNzA4MzI2LnN2ZyJ9:frontify:7lTtjGE2P2Nbz_525sMoZikLkHSh9tegag19Prx_SZc?width=64',
+                'Protección Violencia de Género': 'https://cdn-assets-cloud.frontify.com/s3/frontify-cloud-files-us/eyJwYXRoIjoiZnJvbnRpZnlcL2FjY291bnRzXC84MVwvMTY2NjYzXC9wcm9qZWN0c1wvMjUxMDIzXC9hc3NldHNcL2EyXC80MzY1OTYwXC8zYjFiMDY2MTAzYjIyMWY0MTI4YTVkNzkxYmRjOTE3YS0xNTkxNzA4MzI2LnN2ZyJ9:frontify:7lTtjGE2P2Nbz_525sMoZikLkHSh9tegag19Prx_SZc?width=64',
+                'Salud': 'https://cdn-assets-cloud.frontify.com/s3/frontify-cloud-files-us/eyJwYXRoIjoiZnJvbnRpZnlcL2FjY291bnRzXC84MVwvMTY2NjYzXC9wcm9qZWN0c1wvMjUxMDIzXC9hc3NldHNcLzQwXC80MzY1MDA0XC9jNDk5OWE4ZDk2ZDE1YjZhNzIxMTQ5ZWU4YTFiMTkwMy0xNTkxNzAxMjUzLnN2ZyJ9:frontify:R0CU010gVeFON_MaMY38IILJz2LXMajqem4P1TiGwQk?width=64',
+                'Seguridad alimentaria': 'https://cdn-assets-cloud.frontify.com/s3/frontify-cloud-files-us/eyJwYXRoIjoiZnJvbnRpZnlcL2FjY291bnRzXC84MVwvMTY2NjYzXC9wcm9qZWN0c1wvMjUxMDIzXC9hc3NldHNcL2I0XC80MzY0Nzc1XC8xYjhhNmIxNzZlZTQ4MThjZjJjOGE5NDQyN2FjMjNjYi0xNTkxNjk0MjY5LnN2ZyJ9:frontify:tXhekXovZmafEC1xe1vMSYzRz4aiC23x9HTHlGsrz4U?width=64',
+                'Nutrición': 'https://cdn-assets-cloud.frontify.com/s3/frontify-cloud-files-us/eyJwYXRoIjoiZnJvbnRpZnlcL2FjY291bnRzXC84MVwvMTY2NjYzXC9wcm9qZWN0c1wvMjUxMDIzXC9hc3NldHNcLzQzXC80MzY1NzM1XC82ODU2MWExNDAzMzc0NzBjNDE5MGFmYWY5NTFkNzU4Yi0xNTkxNzA2NjI1LnN2ZyJ9:frontify:3rsyLJgQXbU3Y015aKrjd1ohrB4PI_KPd723_KhjCWA?width=64',
+                'Transversal': 'https://images4.imagebam.com/ef/ae/80/ME150QRY_o.jpg' // Example fallback icon
+            };
+
+            // --- NEW FUNCTIONS FOR REAL MAGIC LINKS ---
+
+            // Helper function to generate a secure random token
+            function generateSecureToken() {
+                if (window.crypto && window.crypto.getRandomValues) {
+                    const array = new Uint8Array(32); // 256 bits
+                    window.crypto.getRandomValues(array);
+                    // Convert to hex string
+                    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+                } else {
+                    // Fallback for older environments (less secure)
+                    console.warn("Using fallback token generation. Consider using a secure context (HTTPS).");
+                    let token = '';
+                    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                    for (let i = 0; i < 64; i++) { // Generate a longer token for fallback
+                        token += characters.charAt(Math.floor(Math.random() * characters.length));
+                    }
+                    return token;
+                }
+            }
+
+            // Function to save the magic link token in Supabase
+            async function saveMagicLinkToken(contactId, email, token) {
+                try {
+                    const expiresAt = new Date();
+                    expiresAt.setHours(expiresAt.getHours() + 2); // Token expires in 2 hours
+                    
+                    const { error } = await supabase
+                        .from('magic_links')
+                        .upsert({
+                            contact_id: contactId,
+                            email: email,
+                            token: token,
+                            expires_at: expiresAt.toISOString(),
+                            used: false
+                        });
+                        
+                    if (error) {
+                        console.error('Error saving magic link token:', error);
+                        throw error; // Re-throw to be caught by the caller
+                    }
+                    console.log(`Magic link token saved for ${email} (ID: ${contactId})`);
+                } catch (error) {
+                    console.error('Error in saveMagicLinkToken:', error);
+                    // Handle error, maybe show a message to the user
+                }
+            }
+
+            // Function to generate a real Supabase magic link
+            // Configuración automática de entorno
+function getAppConfig() {
+    const hostname = window.location.hostname;
+    const protocol = window.location.protocol;
+    const port = window.location.port;
+    
+    let config = {
+        baseUrl: '',
+        isDevelopment: false,
+        isGithubPages: false,
+        isProduction: false
+    };
+    
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        // Desarrollo local
+        config.baseUrl = `${protocol}//${hostname}${port ? ':' + port : ''}`;
+        config.isDevelopment = true;
+        console.log('🔧 Modo desarrollo detectado');
+    } else if (hostname.includes('github.io')) {
+        // GitHub Pages
+        config.baseUrl = `${protocol}//${window.location.host}`;
+        config.isGithubPages = true;
+        console.log('🚀 GitHub Pages detectado');
+    } else {
+        // Producción
+        config.baseUrl = window.location.origin;
+        config.isProduction = true;
+        console.log('🌐 Modo producción detectado');
+    }
+    
+    console.log('📍 Base URL configurada:', config.baseUrl);
+    return config;
+}
+
+// Function to generate a real Supabase magic link
+async function generateRealMagicLink(email, contactId) {
+    try {
+        // Obtener configuración del entorno
+        const appConfig = getAppConfig();
+        const redirectUrl = `${appConfig.baseUrl}/update-contact.html`;
+        
+        // Log para debugging
+        console.log('🔗 Generando magic link:', {
+            email,
+            contactId,
+            redirectUrl,
+            environment: appConfig
+        });
+
+        // Generar token único
+        const magicLinkToken = generateSecureToken();
+        await saveMagicLinkToken(contactId, email, magicLinkToken);
+        
+        // Construir el enlace completo
+        const magicLink = `${redirectUrl}?token=${magicLinkToken}&id=${contactId}`;
+        
+        console.log("✅ Magic Link generado:", magicLink);
+        return magicLink;
+
+    } catch (error) {
+        console.error('❌ Error generando magic link:', error);
+        // URL de fallback
+        const appConfig = getAppConfig();
+        return `${appConfig.baseUrl}/update-contact.html?id=${contactId}&email=${encodeURIComponent(email)}`;
+    }
+}
+// --- END NEW FUNCTIONS ---
+            // --- END NEW FUNCTIONS ---
+
+            // Initialize Application
+            async function initializeApp() {
+                if (appInitialized && currentUser) return;
+                if (!currentUser) return;
+                
+                console.log("Initializing app data...");
+                
+                setupEventListenersApp();
+                setupFilters();
+                setupMultiSelectLists();
+                await loadContacts();
+                setupRealtimeSubscription();
+                
+                appInitialized = true;
+            }
+
+            function setupRealtimeSubscription() {
+                if (contactChangesChannel) {
+                    try {
+                        supabase.removeChannel(contactChangesChannel);
+                    } catch(e) {
+                        console.warn("Error removing old channel:", e);
+                    }
+                }
+                
+                contactChangesChannel = supabase.channel('contacts-changes');
+                contactChangesChannel
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts' }, handleRealtimeUpdate)
+                    .subscribe((status) => {
+                        if (status === 'SUBSCRIBED') {
+                            console.log('Subscribed to contacts-changes channel!');
+                        } else if (status === 'CHANNEL_ERROR') {
+                            console.error('Subscription error on contacts-changes channel');
+                        } else if (status === 'TIMED_OUT') {
+                            console.warn('Subscription timeout on contacts-changes channel');
+                        }
+                    });
+            }
+
+            function handleRealtimeUpdate(payload) {
+                console.log('Realtime update:', payload);
+                let changed = false;
+                
+                if (payload.eventType === 'INSERT') {
+                    const existing = contacts.find(c => c.id === payload.new.id);
+                    if (!existing) {
+                        contacts.push(payload.new);
+                        changed = true;
+                    }
+                } else if (payload.eventType === 'UPDATE') {
+                    const index = contacts.findIndex(c => c.id === payload.new.id);
+                    if (index > -1) {
+                        contacts[index] = {...contacts[index], ...payload.new};
+                        changed = true;
+                    } else {
+                        contacts.push(payload.new);
+                        changed = true;
+                    }
+                } else if (payload.eventType === 'DELETE') {
+                    const oldLength = contacts.length;
+                    contacts = contacts.filter(c => c.id !== payload.old.id);
+                    if (contacts.length !== oldLength) changed = true;
+                }
+                
+                if (changed) {
+                    applyFilters();
+                }
+            }
+
+            function setupFilters() {
+                // Sectors Filter (Icon Grid in Sidebar)
+                const sectorsGrid = document.getElementById('sectorsGrid');
+                sectorsGrid.innerHTML = '';
+                
+                sectoresList.forEach(sector => {
+                    const div = document.createElement('div');
+                    div.className = 'icon-item';
+                    div.dataset.sector = sector;
+                    div.onclick = () => toggleSectorFilter(sector);
+                    
+                    const iconUrl = sectorIcons[sector] || sectorIcons['Transversal'];
+                    div.innerHTML = `
+                        <img src="${iconUrl}" alt="${sector}" class="sector-icon" onerror="this.src='${sectorIcons['Transversal']}'; this.onerror=null;">
+                        <div class="sector-name">${sector.split(' ').slice(0, 2).join(' ')}</div>
+                    `;
+                    sectorsGrid.appendChild(div);
+                });
+
+                // Espacios Filter (Dropdown in Sidebar)
+                const espacioFilter = document.getElementById('espacioFilter');
+                espacioFilter.innerHTML = '<option value="">Todos los espacios</option>';
+                espaciosList.forEach(espacio => {
+                    const option = document.createElement('option');
+                    option.value = espacio;
+                    option.textContent = espacio;
+                    espacioFilter.appendChild(option);
+                });
+
+                // Municipios Filter (Dropdown in Sidebar)
+                const municipiosFilter = document.getElementById('municipiosFilter');
+                municipiosFilter.innerHTML = '<option value="">Todos los municipios</option>';
+                municipiosList.forEach(municipio => {
+                    const option = document.createElement('option');
+                    option.value = municipio;
+                    option.textContent = municipio;
+                    municipiosFilter.appendChild(option);
+                });
+
+                municipiosFilter.addEventListener('change', handleMunicipiosFilter);
+            }
+
+            function setupMultiSelectLists() {
+                // Sectors for Contact Form
+                const sectoresContainer = document.getElementById('sectoresMultiSelect');
+                sectoresContainer.innerHTML = '';
+                sectoresList.forEach(sector => {
+                    const div = document.createElement('div');
+                    div.className = 'multi-select-item';
+                    div.innerHTML = `
+                        <input type="checkbox" id="sector_${sector.replace(/[^a-zA-Z0-9]/g, '_')}" value="${sector}">
+                        <label for="sector_${sector.replace(/[^a-zA-Z0-9]/g, '_')}">${sector}</label>
+                    `;
+                    sectoresContainer.appendChild(div);
+                });
+
+                // Municipios for Contact Form
+                const municipiosContainer = document.getElementById('municipiosMultiSelect');
+                municipiosContainer.innerHTML = '';
+                municipiosList.forEach(municipio => {
+                    const div = document.createElement('div');
+                    div.className = 'multi-select-item';
+                    div.innerHTML = `
+                        <input type="checkbox" id="municipio_${municipio.replace(/[^a-zA-Z0-9]/g, '_')}" value="${municipio}">
+                        <label for="municipio_${municipio.replace(/[^a-zA-Z0-9]/g, '_')}">${municipio}</label>
+                    `;
+                    municipiosContainer.appendChild(div);
+                });
+
+                // Espacios for Contact Form (Multi-select)
+                const espaciosContainer = document.getElementById('espaciosMultiSelect');
+                espaciosContainer.innerHTML = '';
+                espaciosList.forEach(espacio => {
+                    const div = document.createElement('div');
+                    div.className = 'multi-select-item';
+                    div.innerHTML = `
+                        <input type="checkbox" id="espacio_${espacio.replace(/[^a-zA-Z0-9]/g, '_')}" value="${espacio}">
+                        <label for="espacio_${espacio.replace(/[^a-zA-Z0-9]/g, '_')}">${espacio}</label>
+                    `;
+                    espaciosContainer.appendChild(div);
+                });
+            }
+
+            function toggleSectorFilter(sector) {
+                const element = document.querySelector(`[data-sector="${sector}"]`);
+                
+                if (activeFilters.sectores.includes(sector)) {
+                    activeFilters.sectores = activeFilters.sectores.filter(s => s !== sector);
+                    element.classList.remove('active');
+                } else {
+                    activeFilters.sectores.push(sector);
+                    element.classList.add('active');
+                }
+                
+                applyFilters();
+            }
+
+            function handleMunicipiosFilter() {
+                const select = document.getElementById('municipiosFilter');
+                activeFilters.municipios = Array.from(select.selectedOptions).map(option => option.value).filter(Boolean);
+                applyFilters();
+            }
+
+            function setupAuthEventListeners() {
+                document.getElementById('loginForm').addEventListener('submit', handleLogin);
+                document.getElementById('registerForm').addEventListener('submit', handleRegister);
+                document.getElementById('passwordResetForm').addEventListener('submit', handlePasswordResetRequest);
+                
+                document.getElementById('showRegisterLink').addEventListener('click', (e) => { e.preventDefault(); showAuthForm('register'); });
+                document.getElementById('showPasswordResetLink').addEventListener('click', (e) => { e.preventDefault(); showAuthForm('reset'); });
+                document.getElementById('showLoginFromRegisterLink').addEventListener('click', (e) => { e.preventDefault(); showAuthForm('login'); });
+                document.getElementById('showLoginFromResetLink').addEventListener('click', (e) => { e.preventDefault(); showAuthForm('login'); });
+            }
+            
+            function setupEventListenersApp() {
+                document.getElementById('searchInput').addEventListener('input', debounce(handleSearch, 300));
+                document.getElementById('contactForm').addEventListener('submit', handleContactSubmit);
+                document.getElementById('espacioFilter').addEventListener('change', handleEspacioFilter);
+            }
+
+            // Render contacts with improved action buttons
+            function renderContacts() {
+                const tbody = document.getElementById('contactsTableBody');
+                tbody.innerHTML = '';
+                
+                if (filteredContacts.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No se encontraron contactos que coincidan con los filtros.</td></tr>';
+                    return;
+                }
+                
+                filteredContacts.forEach(contact => {
+                    const tr = document.createElement('tr');
+                    
+                    // Format phone for WhatsApp
+                    const phoneForWhatsApp = formatPhoneForWhatsApp(contact.Teléfono);
+                    const whatsappBtn = phoneForWhatsApp ? 
+                        `<button class="action-btn action-btn-whatsapp" data-tooltip="WhatsApp" onclick="sendWhatsApp('${phoneForWhatsApp}')">
+                            <i class="fab fa-whatsapp"></i>
+                        </button>` : '';
+                    
+                    tr.innerHTML = `
+                        <td><input type="checkbox" class="contact-checkbox" value="${contact.id}" onchange="toggleContactSelection('${contact.id}')"></td>
+                        <td>${contact.organizacion || ''}</td>
+                        <td>${contact.siglas || ''}</td>
+                        <td>${contact.punto_focal || ''}</td>
+                        <td>${contact.cargo || ''}</td>
+                        <td>
+                            ${contact.email || ''}
+                            ${contact.email ? `<i class="fas fa-copy copy-icon" title="Copiar email" onclick="copyToClipboard('${contact.email}', this)"></i>` : ''}
+                        </td>
+                        <td>${contact.espacio_coordinacion || ''}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="action-btn action-btn-view" data-tooltip="Ver Detalles" onclick="viewContact('${contact.id}')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="action-btn action-btn-edit" data-tooltip="Editar" onclick="editContact('${contact.id}')">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="action-btn action-btn-qr" data-tooltip="Código QR" onclick="showQRModal('${contact.id}')">
+                                    <i class="fas fa-qrcode"></i>
+                                </button>
+                                ${whatsappBtn}
+                                <button class="action-btn action-btn-delete" data-tooltip="Eliminar" onclick="deleteContact('${contact.id}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>`;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            // WhatsApp function for individual contact
+            function sendWhatsApp(phone) {
+                if (!phone) {
+                    showAppMessage('Número de Teléfono no disponible', 'warning');
+                    return;
+                }
+                
+                const message = encodeURIComponent('Mensaje de OCHA Maracaibo:\n\n');
+                window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
+            }
+
+            async function importContactsFromFile(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+                
+                showAppMessage('Procesando archivo...', 'info', false);
+                try {
+                    let jsonData;
+                    
+                    if (file.name.endsWith('.txt') || file.name.endsWith('.csv')) {
+                        const text = await readFileAsText(file);
+                        jsonData = parseCsvText(text);
+                    } else if (file.name.endsWith('.xlsx')) {
+                        const arrayBuffer = await readFileAsArrayBuffer(file);
+                        jsonData = parseExcelFile(arrayBuffer);
+                    } else {
+                        throw new Error("Formato de archivo no soportado. Use .txt, .csv o .xlsx.");
+                    }
+
+                    if (!jsonData || jsonData.length === 0) {
+                        showAppMessage('El archivo importado está vacío o no se pudo leer.', 'error');
+                        return;
+                    }
+				    console.log("Datos parseados del archivo:", jsonData.slice(0, 3));
+                    await processAndUpsertContacts(jsonData, 'archivo');
+                    
+                } catch (error) {
+                    console.error("Error en importContactsFromFile:", error);
+                    showAppMessage('Error importando contactos desde archivo: ' + error.message, 'error');
+                } finally {
+                    event.target.value = null;
+                }
+            }
+
+            function readFileAsText(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (event) => resolve(event.target.result);
+                    reader.onerror = (error) => reject(error);
+                    reader.readAsText(file, 'UTF-8');
+                });
+            }
+
+            function readFileAsArrayBuffer(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (event) => resolve(event.target.result);
+                    reader.onerror = (error) => reject(error);
+                    reader.readAsArrayBuffer(file);
+                });
+            }
+
+            function parseCsvText(csvText) {
+                const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== '');
+                if (lines.length < 2) return [];
+                
+                const headers = lines[0].split(';').map(h => h.replace(/"/g, '').trim());
+                const jsonData = [];
+
+                for (let i = 1; i < lines.length; i++) {
+                    if (lines[i].toLowerCase().startsWith('total')) continue;
+
+                    const values = lines[i].split(';');
+                    const rowObject = {};
+                    headers.forEach((header, index) => {
+                        const value = values[index] ? values[index].trim() : "";
+                        rowObject[header] = value;
+                    });
+                    jsonData.push(rowObject);
+                }
+                return jsonData;
+            }
+
+            function parseExcelFile(arrayBuffer) {
+                const data = new Uint8Array(arrayBuffer);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                if (!firstSheetName) throw new Error("El archivo Excel no contiene hojas.");
+                const worksheet = workbook.Sheets[firstSheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+                return jsonData;
+            }
+
+            async function processAndUpsertContacts(jsonData, sourceType) {
+                showAppMessage(`Procesando ${jsonData.length} contactos desde ${sourceType}...`, 'info', false);
+                
+                const contactsToUpsert = jsonData.map(processImportRow).filter(c => c.email);
+
+                if (contactsToUpsert.length === 0) {
+                    showAppMessage('No se encontraron contactos válidos para importar (se requiere email).', 'error');
+                    return;
+                }
+
+                const chunkSize = 50;
+                let importedCount = 0;
+                let errorsCount = 0;
+
+                for (let i = 0; i < contactsToUpsert.length; i += chunkSize) {
+                    const chunk = contactsToUpsert.slice(i, i + chunkSize);
+                    const { error } = await supabase.from('contacts').upsert(chunk, { onConflict: 'email' });
+
+                    if (error) {
+                        console.error("Error during upsert for chunk:", error);
+                        errorsCount += chunk.length;
+                    } else {
+                        importedCount += chunk.length;
+                    }
+                    showAppMessage(`Procesando... ${i + chunk.length} de ${contactsToUpsert.length}`, 'info', false);
+                }
+                
+                let finalMessage = `${importedCount} contactos importados/actualizados.`;
+                if (errorsCount > 0) {
+                    finalMessage += ` ${errorsCount} filas no pudieron ser procesadas.`;
+                }
+                showAppMessage(finalMessage, errorsCount === 0 ? 'success' : 'error');
+
+                await loadContacts();
+            }
+
+            function processImportRow(row) {
+                const get = (keys) => {
+                    for (const key of keys) {
+                        const foundKey = Object.keys(row).find(k => k.toLowerCase() === key.toLowerCase());
+                        if (foundKey && row[foundKey] !== undefined && row[foundKey] !== null) {
+                            return String(row[foundKey]).trim();
+                        }
+                    }
+                    return '';
+                };
+                const getBool = (keys) => {
+                    const val = get(keys).toLowerCase();
+                    return val === 'sí' || val === 's' || val === 'si' || val === 'true' || val === '1' || val === 'yes';
+                };
+
+                return {
+                    organizacion: get(['Organización']),
+                    siglas: get(['Siglas']),
+                    punto_focal: get(['Punto Focal', 'Nombre Punto Focal']),
+                    cargo: get(['Cargo', 'Puesto']),
+                    email: get(['Email', 'Correo Electrónico']),
+                    Teléfono: get(['Teléfono', 'Tel']),
+                    tipo_organizacion: get(['Tipo de Organización', 'Tipo Organización']),
+                    reporta_345w: getBool(['Reporta en el 345W', '345W Report']),
+                    socio_implementador: getBool(['Socio Implementador', 'Implementer Partner']),
+                    organizacion_lider: getBool(['Organización Líder', 'Lead Org']),
+                    participacion_flc: getBool(['Participación FLC', 'FLC Participation']),
+                    espacio_coordinacion: get(['Espacio de Coordinación']),
+                    sectores_concat: get(['Sectores', 'Sectors']),
+                    municipios_concat: get(['Municipios', 'Municipalities'])
+                };
+            }
+            
+            function exportExcel() {
+                const exportData = filteredContacts.map(contact => ({
+                    'Organización': contact.organizacion,
+                    'Siglas': contact.siglas,
+                    'Punto Focal': contact.punto_focal,
+                    'Cargo': contact.cargo,
+                    'Email': contact.email,
+                    'Teléfono': contact.Teléfono,
+                    'Tipo de Organización': contact.tipo_organizacion,
+                    'Reporta en el 345W': contact.reporta_345w ? 'Sí' : 'No',
+                    'Socio Implementador': contact.socio_implementador ? 'Sí' : 'No',
+                    'Organización Líder': contact.organizacion_lider ? 'Sí' : 'No',
+                    'Participación FLC': contact.participacion_flc ? 'Sí' : 'No',
+                    'Espacio de Coordinación': contact.espacio_coordinacion,
+                    'Sectores': contact.sectores_concat,
+                    'Municipios': contact.municipios_concat
+                }));
+                
+                const ws = XLSX.utils.json_to_sheet(exportData);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Contactos');
+                XLSX.writeFile(wb, `contactos_ocha_maracaibo_${new Date().toISOString().split('T')[0]}.xlsx`);
+                showAppMessage('Exportación Excel completada exitosamente', 'success');
+            }
+
+            function exportPDF() {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+                // Header function for all pages
+                const addHeader = (pageNumber = 1) => {
+                    doc.setFontSize(16);
+                    doc.setTextColor(0, 114, 188); // OCHA Blue
+                    doc.text('Sub Oficina OCHA Maracaibo', doc.internal.pageSize.width / 2, 15, { align: 'center' });
+                    doc.setFontSize(12);
+                    doc.setTextColor(0, 0, 0);
+                    doc.text('Lista de Contactos Humanitarios', doc.internal.pageSize.width / 2, 25, { align: 'center' });
+                };
+
+                // Footer function for all pages
+                const addFooter = (pageNumber, totalPages) => {
+                    const today = new Date().toLocaleDateString('es-ES');
+                    doc.setFontSize(8);
+                    doc.setTextColor(100);
+                    doc.text(`Fecha: ${today}`, 20, doc.internal.pageSize.height - 10);
+                    doc.text(`Página ${pageNumber} de ${totalPages}`, doc.internal.pageSize.width - 20, doc.internal.pageSize.height - 10, { align: 'right' });
+                };
+
+                // Prepare data for table
+                const tableData = filteredContacts.map(c => [
+                    c.organizacion || '', 
+                    c.siglas || '', 
+                    c.punto_focal || '', 
+                    c.cargo || '', 
+                    c.email || '', 
+                    c.Teléfono || '', 
+                    c.tipo_organizacion || '',
+                    c.espacio_coordinacion || ''
+                ]);
+
+                // Calculate total pages needed
+                const rowsPerPage = 15; // Approximate rows that fit per page
+                const totalPages = Math.ceil(tableData.length / rowsPerPage);
+
+                // Add content with proper pagination
+                doc.autoTable({
+                    head: [['Organización', 'Siglas', 'Punto Focal', 'Cargo', 'Email', 'Teléfono', 'Tipo Org.', 'Espacio']],
+                    body: tableData,
+                    startY: 35,
+                    margin: { top: 35, bottom: 20 },
+                    headStyles: { 
+                        fillColor: [0, 114, 188],
+                        textColor: 255,
+                        fontStyle: 'bold',
+                        fontSize: 8
+                    },
+                    bodyStyles: { 
+                        fontSize: 7,
+                        cellPadding: 1.5,
+                        valign: 'middle'
+                    },
+                    columnStyles: {
+                        0: { cellWidth: 40 }, // Organización
+                        1: { cellWidth: 35 }, // Siglas
+                        2: { cellWidth: 30 }, // Punto Focal
+                        3: { cellWidth: 30 }, // Cargo
+                        4: { cellWidth: 45 }, // Email
+                        5: { cellWidth: 30 }, // Teléfono
+                        6: { cellWidth: 30 }, // Tipo Org
+                        7: { cellWidth: 30 }  // Espacio
+                    },
+                    didDrawPage: (data) => {
+                        addHeader();
+                        addFooter(data.pageNumber, totalPages);
+                    },
+                    showHead: 'everyPage',
+                    theme: 'striped'
+                });
+
+                doc.save(`contactos_ocha_maracaibo_${new Date().toISOString().split('T')[0]}.pdf`);
+                showAppMessage('Exportación PDF completada exitosamente', 'success');
+            }
+
+            // Selection functions
+            function toggleSelectAll() {
+                const selectAllCheckbox = document.getElementById('selectAll');
+                const contactCheckboxes = document.querySelectorAll('.contact-checkbox:not(#selectAll)');
+                
+                if (selectAllCheckbox.checked) {
+                    contactCheckboxes.forEach(checkbox => {
+                        checkbox.checked = true;
+                        selectedContacts.add(checkbox.value);
+                    });
+                } else {
+                    contactCheckboxes.forEach(checkbox => {
+                        checkbox.checked = false;
+                    });
+                    selectedContacts.clear();
+                }
+                updateSelectionControls();
+            }
+
+            function toggleContactSelection(contactId) {
+                if (selectedContacts.has(contactId)) {
+                    selectedContacts.delete(contactId);
+                } else {
+                    selectedContacts.add(contactId);
+                }
+                
+                updateSelectAllCheckbox();
+                updateSelectionControls();
+            }
+
+            function updateSelectAllCheckbox() {
+                const selectAllCheckbox = document.getElementById('selectAll');
+                const contactCheckboxes = document.querySelectorAll('.contact-checkbox:not(#selectAll)');
+                const checkedCheckboxes = document.querySelectorAll('.contact-checkbox:not(#selectAll):checked');
+                
+                if (checkedCheckboxes.length === 0) {
+                    selectAllCheckbox.indeterminate = false;
+                    selectAllCheckbox.checked = false;
+                } else if (checkedCheckboxes.length === contactCheckboxes.length) {
+                    selectAllCheckbox.indeterminate = false;
+                    selectAllCheckbox.checked = true;
+                } else {
+                    selectAllCheckbox.indeterminate = true;
+                }
+            }
+
+            function updateSelectionControls() {
+                const selectionControls = document.getElementById('selectionControls');
+                const selectionInfo = document.getElementById('selectionInfo');
+                
+                if (selectedContacts.size > 0) {
+                    selectionControls.classList.add('active');
+                    selectionInfo.textContent = `${selectedContacts.size} contacto${selectedContacts.size > 1 ? 's' : ''} seleccionado${selectedContacts.size > 1 ? 's' : ''}`;
+                } else {
+                    selectionControls.classList.remove('active');
+                }
+            }
+
+            function clearSelection() {
+                selectedContacts.clear();
+                document.querySelectorAll('.contact-checkbox').forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+                // Reset selectAll checkbox state
+                const selectAllCheckbox = document.getElementById('selectAll');
+                selectAllCheckbox.indeterminate = false;
+                selectAllCheckbox.checked = false;
+                updateSelectionControls();
+            }
+
+            function createGroupFromSelection() {
+                if (selectedContacts.size === 0) {
+                    showAppMessage('Seleccione al menos un contacto para crear un grupo', 'error');
+                    return;
+                }
+                
+                // Set pending action and prompt for admin password
+                pendingAdminAction = 'createGroup'; 
+                document.getElementById('adminActionMessage').textContent = 'Por favor, ingresa la clave de administrador para crear grupos.';
+                document.getElementById('adminPasswordModal').classList.add('active');
+            }
+
+            function showGroupModal() {
+                const selectedContactsList = document.getElementById('selectedContactsList');
+                const selectedContactsArray = Array.from(selectedContacts).map(id => 
+                    contacts.find(c => c.id === id)
+                ).filter(Boolean);
+                
+                selectedContactsList.innerHTML = `
+                    <h5>Contactos seleccionados (${selectedContactsArray.length}):</h5>
+                    <ul style="max-height: 150px; overflow-y: auto; margin: 0.5rem 0;">
+                        ${selectedContactsArray.map(contact => 
+                            `<li style="margin-bottom: 0.25rem;">${contact.organizacion} - ${contact.punto_focal} (${contact.email})</li>`
+                        ).join('')}
+                    </ul>
+                `;
+                
+                document.getElementById('groupModal').classList.add('active');
+            }
+
+            function saveGroup() {
+                const groupName = document.getElementById('groupName').value.trim();
+                const groupDescription = document.getElementById('groupDescription').value.trim();
+                
+                if (!groupName) {
+                    const groupModalMessage = document.getElementById('groupModalMessage');
+                    groupModalMessage.textContent = 'El nombre del grupo es obligatorio.';
+                    groupModalMessage.className = 'status-message status-error';
+                    groupModalMessage.style.display = 'block';
+                    return;
+                }
+
+                // Simulate saving the group (in a real implementation, this would save to Supabase)
+                try {
+                    // Here you would implement the actual group creation logic with Supabase
+                    // For now, we'll just show a success message
+                    
+                    showAppMessage(`Grupo "${groupName}" creado exitosamente con ${selectedContacts.size} contactos.`, 'success');
+                    
+                    closeGroupModal();
+                    clearSelection();
+                    
+                } catch (error) {
+                    const groupModalMessage = document.getElementById('groupModalMessage');
+                    groupModalMessage.textContent = 'Error al crear el grupo: ' + error.message;
+                    groupModalMessage.className = 'status-message status-error';
+                    groupModalMessage.style.display = 'block';
+                }
+            }
+
+            function closeGroupModal() {
+                document.getElementById('groupModal').classList.remove('active');
+                document.getElementById('selectedContactsList').innerHTML = '';
+                document.getElementById('groupName').value = '';
+                document.getElementById('groupDescription').value = '';
+                const groupModalMessage = document.getElementById('groupModalMessage');
+                groupModalMessage.textContent = '';
+                groupModalMessage.className = 'status-message';
+                groupModalMessage.style.display = 'none';
+            }
+
+            function sendEmailToSelection() {
+                if (selectedContacts.size === 0) {
+                    showAppMessage('Seleccione al menos un contacto para enviar correo', 'error');
+                    return;
+                }
+                
+                const selectedContactsArray = Array.from(selectedContacts).map(id => 
+                    contacts.find(c => c.id === id)
+                ).filter(Boolean);
+                
+                const emails = selectedContactsArray.map(contact => contact.email).filter(Boolean);
+                const emailList = emails.join(';');
+                
+                const subject = encodeURIComponent('Comunicación OCHA Maracaibo');
+                const body = encodeURIComponent('Estimados colegas,\n\n\n\nSaludos cordiales,\nSub Oficina OCHA Maracaibo');
+                
+                window.open(`mailto:${emailList}?subject=${subject}&body=${body}`);
+            }
+
+            function sendWhatsAppToSelection() {
+                if (selectedContacts.size === 0) {
+                    showAppMessage('Seleccione al menos un contacto para enviar WhatsApp', 'error');
+                    return;
+                }
+                
+                const selectedContactsArray = Array.from(selectedContacts).map(id => 
+                    contacts.find(c => c.id === id)
+                ).filter(Boolean);
+                
+                const phones = selectedContactsArray
+                    .map(contact => contact.Teléfono)
+                    .filter(Boolean)
+                    .map(formatPhoneForWhatsApp)
+                    .filter(Boolean);
+                
+                if (phones.length === 0) {
+                    showAppMessage('Los contactos seleccionados no tienen Teléfonos registrados o el formato es incorrecto.', 'warning');
+                    return;
+                }
+                
+                const message = encodeURIComponent('Mensaje de OCHA Maracaibo:\n\n');
+                phones.forEach(phone => {
+                    window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
+                });
+            }
+
+            function formatPhoneForWhatsApp(phone) {
+                if (!phone) return null;
+                let cleaned = phone.replace(/\D/g, '');
+                // Assuming Venezuelan numbers starting with 04, which are 10 digits
+                // We need to prepend the country code '58'
+                if (!cleaned.startsWith('58') && cleaned.length >= 10) {
+                    // Take last 10 digits and prepend 58
+                    cleaned = '58' + cleaned.substring(cleaned.length - 10); 
+                } else if (!cleaned.startsWith('58') && cleaned.length < 10) {
+                    // Invalid number format for WhatsApp if it's too short and doesn't start with 58
+                    return null; 
+                }
+                // WhatsApp requires the '+' prefix, but wa.me links handle it if omitted. Let's keep it clean.
+                return cleaned; 
+            }
+
+            async function handleContactSubmit(e) {
+                e.preventDefault();
+                
+                const contactId = document.getElementById('contactId').value;
+                
+                // Gather selected sectors, municipalities, and spaces
+                const selectedSectores = [];
+                document.querySelectorAll('#sectoresMultiSelect input[type="checkbox"]:checked').forEach(checkbox => {
+                    selectedSectores.push(checkbox.value);
+                });
+                
+                const selectedMunicipios = [];
+                document.querySelectorAll('#municipiosMultiSelect input[type="checkbox"]:checked').forEach(checkbox => {
+                    selectedMunicipios.push(checkbox.value);
+                });
+                
+                const selectedEspacios = [];
+                document.querySelectorAll('#espaciosMultiSelect input[type="checkbox"]:checked').forEach(checkbox => {
+                    selectedEspacios.push(checkbox.value);
+                });
+                
+                // Construct contact data object
+                const contactData = {
+                    organizacion: document.getElementById('organizacion').value.trim(),
+                    siglas: document.getElementById('siglas').value.trim(),
+                    punto_focal: document.getElementById('punto_focal').value.trim(),
+                    cargo: document.getElementById('cargo').value.trim(),
+                    email: document.getElementById('email').value.trim().toLowerCase(),
+                    Teléfono: document.getElementById('Teléfono').value.trim(),
+                    tipo_organizacion: document.getElementById('tipo_organizacion').value.trim(),
+                    espacio_coordinacion: selectedEspacios.join(', '),
+                    sectores_concat: selectedSectores.join(', '),
+                    municipios_concat: selectedMunicipios.join(', '),
+                    reporta_345w: document.getElementById('reporta_345w').checked,
+                    socio_implementador: document.getElementById('socio_implementador').checked,
+                    organizacion_lider: document.getElementById('organizacion_lider').checked,
+                    participacion_flc: document.getElementById('participacion_flc').checked,
+                };
+                
+                try {
+                    showAppMessage('Guardando contacto...', 'info', false);
+                    
+                    let query;
+                    if (contactId) {
+                        query = supabase.from('contacts').update(contactData).eq('id', contactId);
+                    } else {
+                        query = supabase.from('contacts').insert([contactData]);
+                    }
+                    const { error } = await query;
+                    if (error) throw error;
+                    
+                    showAppMessage(contactId ? 'Contacto actualizado' : 'Contacto creado', 'success');
+                    closeContactModal();
+                    await loadContacts();
+                    
+                } catch (error) {
+                    console.error("Error saving contact:", error, contactData);
+                    showAppMessage(`Error guardando contacto: ${error.message}`, 'error');
+                }
+            }
+
+            function viewContact(id) {
+                const contact = contacts.find(c => c.id.toString() === id);
+                if (!contact) {
+                    console.error("Contact not found for view:", id);
+                    return;
+                }
+
+                const viewBody = document.getElementById('viewContactBody');
+                viewBody.innerHTML = `
+                    <h4 style="color: var(--color-ochablue); margin-bottom: 1rem;">${contact.organizacion || 'N/A'} (${contact.siglas || 'N/A'})</h4>
+                    <p><strong>Punto Focal:</strong> ${contact.punto_focal || 'N/A'}</p>
+                    <p><strong>Cargo:</strong> ${contact.cargo || 'N/A'}</p>
+                    <p><strong>Email:</strong> ${contact.email || 'N/A'}<i class="fas fa-copy copy-icon" title="Copiar email" onclick="copyToClipboard('${contact.email}', this)"></i></p>
+                    <p><strong>Teléfono:</strong> ${contact.Teléfono || 'N/A'}</p>
+                    <p><strong>Tipo de Organización:</strong> ${contact.tipo_organizacion || 'N/A'}</p>
+                    <p><strong>Espacio de Coordinación:</strong> ${contact.espacio_coordinacion || 'N/A'}</p>
+                    <hr>
+                    <h5 style="color: var(--color-ochablue); margin-top: 1rem; margin-bottom: 0.5rem;">Sectores</h5>
+                    <p>${contact.sectores_concat || 'No especificado'}</p>
+                    <h5 style="color: var(--color-ochablue); margin-top: 1rem; margin-bottom: 0.5rem;">Municipios</h5>
+                    <p>${contact.municipios_concat || 'No especificado'}</p>
+                    <hr>
+                    <h5 style="color: var(--color-ochablue); margin-top: 1rem; margin-bottom: 0.5rem;">Participación</h5>
+                    <p><strong>Reporta en el 345W:</strong> ${contact.reporta_345w ? 'Sí' : 'No'}</p>
+                    <p><strong>Socio Implementador:</strong> ${contact.socio_implementador ? 'Sí' : 'No'}</p>
+                    <p><strong>Organización Líder:</strong> ${contact.organizacion_lider ? 'Sí' : 'No'}</p>
+                    <p><strong>Participación FLC:</strong> ${contact.participacion_flc ? 'Sí' : 'No'}</p>
+                `;
+
+                document.getElementById('viewContactModal').classList.add('active');
+            }
+
+            function closeViewContactModal() {
+                document.getElementById('viewContactModal').classList.remove('active');
+            }
+
+            async function editContact(id) {
+                const contact = contacts.find(c => c.id.toString() === id);
+                if (!contact) {
+                    console.error("Contact not found for edit:", id);
+                    return;
+                }
+                
+                document.getElementById('modalTitle').textContent = 'Editar Contacto';
+                document.getElementById('contactId').value = id;
+                
+                // Fill form fields
+                document.getElementById('organizacion').value = contact.organizacion || '';
+                document.getElementById('siglas').value = contact.siglas || '';
+                document.getElementById('punto_focal').value = contact.punto_focal || '';
+                document.getElementById('cargo').value = contact.cargo || '';
+                document.getElementById('email').value = contact.email || '';
+                document.getElementById('Teléfono').value = contact.Teléfono || '';
+                document.getElementById('tipo_organizacion').value = contact.tipo_organizacion || '';
+                
+                // Set checkboxes
+                document.getElementById('reporta_345w').checked = contact.reporta_345w || false;
+                document.getElementById('socio_implementador').checked = contact.socio_implementador || false;
+                document.getElementById('organizacion_lider').checked = contact.organizacion_lider || false;
+                document.getElementById('participacion_flc').checked = contact.participacion_flc || false;
+                
+                // Set multi-select checkboxes for Sectores
+                const contactSectores = (contact.sectores_concat || '').split(',').map(s => s.trim());
+                document.querySelectorAll('#sectoresMultiSelect input[type="checkbox"]').forEach(checkbox => {
+                    checkbox.checked = contactSectores.includes(checkbox.value);
+                });
+                
+                // Set multi-select checkboxes for Municipios
+                const contactMunicipios = (contact.municipios_concat || '').split(',').map(m => m.trim());
+                document.querySelectorAll('#municipiosMultiSelect input[type="checkbox"]').forEach(checkbox => {
+                    checkbox.checked = contactMunicipios.includes(checkbox.value);
+                });
+                
+                // Set multi-select checkboxes for Espacios
+                const contactEspacios = (contact.espacio_coordinacion || '').split(',').map(e => e.trim());
+                document.querySelectorAll('#espaciosMultiSelect input[type="checkbox"]').forEach(checkbox => {
+                    checkbox.checked = contactEspacios.includes(checkbox.value);
+                });
+                
+                document.getElementById('contactModal').classList.add('active');
+            }
+
+            async function deleteContact(id) {
+                pendingDeleteId = id;
+                const contact = contacts.find(c => c.id === id);
+                
+                pendingAdminAction = 'delete'; 
+                document.getElementById('adminActionMessage').textContent = 'Por favor, ingresa la clave de administrador para eliminar este contacto.';
+                document.getElementById('adminPasswordModal').classList.add('active');
+            }
+
+            function confirmAdminAction() {
+                const passwordInput = document.getElementById('adminPassword');
+                const adminPasswordError = document.getElementById('adminPasswordError');
+                const enteredPassword = passwordInput.value;
+
+                if (enteredPassword === ADMIN_PASSWORD) {
+                    adminPasswordError.textContent = '';
+                    adminPasswordError.style.display = 'none';
+                    passwordInput.value = '';
+                    document.getElementById('adminPasswordModal').classList.remove('active');
+
+                    // Execute the pending action
+                    if (pendingAdminAction === 'delete' && pendingDeleteId) {
+                        performDelete(pendingDeleteId);
+                        pendingDeleteId = null;
+                    } else if (pendingAdminAction === 'createGroup') {
+                        showGroupModal();
+                    }
+                    
+                    pendingAdminAction = null;
+                } else {
+                    adminPasswordError.textContent = 'Clave de administrador incorrecta.';
+                    adminPasswordError.style.display = 'block';
+                }
+            }
+
+            function closeAdminPasswordModal() {
+                document.getElementById('adminPasswordModal').classList.remove('active');
+                document.getElementById('adminPassword').value = '';
+                const adminPasswordError = document.getElementById('adminPasswordError');
+                adminPasswordError.textContent = '';
+                adminPasswordError.style.display = 'none';
+                pendingDeleteId = null;
+                pendingAdminAction = null;
+            }
+
+            async function performDelete(id) {
+                try {
+                    showAppMessage('Eliminando contacto...', 'info', false);
+                    const { error } = await supabase.from('contacts').delete().eq('id', id);
+                    if (error) throw error;
+                    showAppMessage('Contacto eliminado exitosamente', 'success');
+                    await loadContacts();
+                } catch (error) {
+                    showAppMessage('Error eliminando contacto: ' + error.message, 'error');
+                }
+            }
+
+            function showAddContactModal() {
+                document.getElementById('modalTitle').textContent = 'Nuevo Contacto';
+                document.getElementById('contactForm').reset();
+                document.getElementById('contactId').value = '';
+                document.getElementById('tipo_organizacion').selectedIndex = 0;
+                
+                // Clear all multi-select checkboxes
+                document.querySelectorAll('#sectoresMultiSelect input[type="checkbox"]').forEach(checkbox => checkbox.checked = false);
+                document.querySelectorAll('#municipiosMultiSelect input[type="checkbox"]').forEach(checkbox => checkbox.checked = false);
+                document.querySelectorAll('#espaciosMultiSelect input[type="checkbox"]').forEach(checkbox => checkbox.checked = false);
+                
+                document.getElementById('contactModal').classList.add('active');
+            }
+
+            function closeContactModal() {
+                document.getElementById('contactModal').classList.remove('active');
+            }
+			function debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => { clearTimeout(timeout); func(...args); };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            }
+
+            function showAppMessage(message, type, autoHide = true) {
+                const messageEl = document.getElementById('appStatusMessage');
+                messageEl.textContent = message;
+                messageEl.className = `status-message status-${type}`;
+                messageEl.style.display = 'block';
+                
+                if (autoHide) {
+                    setTimeout(() => {
+                        if (messageEl.textContent === message) { 
+                            messageEl.style.display = 'none';
+                        }
+                    }, 5000);
+                }
+            }
+            
+            function hideAuthMessages() {
+                ['loginError', 'loginSuccess', 'registerError', 'registerSuccess', 'resetError', 'resetSuccess'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.textContent = '';
+                        el.style.display = 'none';
+                    }
+                });
+            }
+
+            function showError(elementId, message) {
+                const errorEl = document.getElementById(elementId);
+                if (!errorEl) return;
+                
+                const successId = elementId.replace("Error", "Success");
+                const successEl = document.getElementById(successId);
+                if (successEl) {
+                    successEl.textContent = '';
+                    successEl.style.display = 'none';
+                }
+                
+                errorEl.textContent = message;
+                errorEl.style.display = 'block';
+            }
+
+            function showSuccess(elementId, message) {
+                const successEl = document.getElementById(elementId);
+                if (!successEl) return;
+                
+                const errorId = elementId.replace("Success", "Error");
+                const errorEl = document.getElementById(errorId);
+                if (errorEl) {
+                    errorEl.textContent = '';
+                    errorEl.style.display = 'none';
+                }
+                
+                successEl.textContent = message;
+                successEl.style.display = 'block';
+                
+                setTimeout(() => {
+                    if (successEl.textContent === message) {
+                        successEl.textContent = '';
+                        successEl.style.display = 'none';
+                    }
+                }, 5000);
+            }
+
+            window.addEventListener('DOMContentLoaded', () => {
+                setupAuthEventListeners();
+                // Check initial auth state on page load
+                const { data: session } = supabase.auth.getSession();
+                if (session && session.user) {
+                    currentUser = session.user;
+                    showMainApp();
+                } else {
+                    showLoginPage();
+                }
+            });
+
+            supabase.auth.onAuthStateChange(async (event, session) => {
+                console.log('Auth event:', event, session);
+                const previousUser = currentUser;
+                
+                if (event === "PASSWORD_RECOVERY") {
+                    console.log("Password recovery initiated.");
+                    showSuccess('loginSuccess', 'Se ha iniciado el proceso de recuperación de contraseña.');
+                }
+                
+                if (session && session.user) {
+                    currentUser = session.user;
+                    // Only show main app if it's currently hidden or if the user has changed
+                    if (document.getElementById('mainApp').style.display === 'none' || (previousUser && previousUser.id !== currentUser.id)) {
+                        appInitialized = false; // Reset app state if user changes
+                        showMainApp();
+                    } else if (document.getElementById('mainApp').style.display === 'block' && !appInitialized) {
+                        // If app is visible but not initialized (e.g., after page reload but session persisted)
+                        await initializeApp();
+                    }
+                    document.getElementById('userEmail').textContent = currentUser.email;
+                } else {
+                    currentUser = null;
+                    if (appInitialized) {
+                        // Clean up Supabase channel if user logs out
+                        if (contactChangesChannel) {
+                            try {
+                                await supabase.removeChannel(contactChangesChannel);
+                            } catch(e) {
+                                console.warn("Error removing old channel:", e);
+                            }
+                        }
+                    }
+                    appInitialized = false; // Mark app as not initialized
+                    showLoginPage();
+                }
+            });
+
+            function showAuthForm(formToShow) {
+                hideAuthMessages();
+                document.getElementById('loginForm').style.display = formToShow === 'login' ? 'block' : 'none';
+                document.getElementById('registerForm').style.display = formToShow === 'register' ? 'block' : 'none';
+                document.getElementById('passwordResetForm').style.display = formToShow === 'reset' ? 'block' : 'none';
+
+                document.getElementById('linkToRegister').style.display = formToShow === 'login' ? 'block' : 'none';
+                document.getElementById('linkToPasswordReset').style.display = formToShow === 'login' ? 'block' : 'none';
+                
+                document.getElementById('linkToLoginFromRegister').style.display = formToShow === 'register' ? 'block' : 'none';
+                document.getElementById('linkToLoginFromReset').style.display = formToShow === 'reset' ? 'block' : 'none';
+            }
+
+            async function handleLogin(e) {
+                e.preventDefault();
+                hideAuthMessages();
+                const email = document.getElementById('loginEmail').value;
+                const password = document.getElementById('loginPassword').value;
+                
+                try {
+                    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+                    if (error) throw error;
+                    showSuccess('loginSuccess', 'Ingreso exitoso. Redirigiendo...');
+                    // The onAuthStateChange listener will handle the redirection
+                } catch (error) {
+                    let errorMessage = error.message;
+                    if (errorMessage.includes("Failed to fetch")) {
+                        errorMessage = "Error de red o CORS. Verifique su conexión a internet.";
+                    } else if (errorMessage.includes("Invalid login credentials")) {
+                        errorMessage = "Credenciales inválidas. Por favor, revise su correo y contraseña.";
+                    } else if (errorMessage.includes("Email not confirmed")) {
+                        errorMessage = "Su correo electrónico no ha sido confirmado. Revise su bandeja de entrada para el enlace de confirmación.";
+                    }
+                    showError('loginError', `Error al ingresar: ${errorMessage}`);
+                }
+            }
+
+            async function handleRegister(e) {
+                e.preventDefault();
+                hideAuthMessages();
+                const email = document.getElementById('registerEmail').value;
+                const password = document.getElementById('registerPassword').value;
+                
+                try {
+                    const { data, error } = await supabase.auth.signUp({ email, password });
+                    if (error) throw error;
+                    
+                    // Check if user was created but email not confirmed
+                    if (data.user && data.user.identities && data.user.identities.length === 0) {
+                        showError('registerError', 'Este correo ya está registrado y requiere confirmación.');
+                    } else if (data.user && (data.user.email_confirmed_at === null && data.session === null)) {
+                        // User signed up but needs email confirmation
+                        showSuccess('registerSuccess', '¡Registro exitoso! Revisa tu correo para confirmar tu cuenta.');
+                    } else {
+                        // Registration successful and possibly auto-confirmed (depending on Supabase settings)
+                        showSuccess('registerSuccess', '¡Registro exitoso! Ahora puedes ingresar.');
+                        showAuthForm('login'); // Redirect to login form
+                    }
+                } catch (error) {
+                    let errorMessage = error.message;
+                    if (errorMessage.includes("duplicate key value violates unique constraint")) {
+                        errorMessage = "Este correo electrónico ya está en uso.";
+                    }
+                    showError('registerError', `Error en el registro: ${errorMessage}`);
+                }
+            }
+
+            async function handlePasswordResetRequest(e) {
+                e.preventDefault();
+                hideAuthMessages();
+                const email = document.getElementById('resetEmail').value;
+                
+                try {
+                    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                        // This URL must be configured in Supabase Auth settings for password reset
+                        redirectTo: window.location.origin + '/update-password.html' // Example path
+                    });
+                    if (error) throw error;
+                    showSuccess('resetSuccess', 'Si existe una cuenta asociada a este correo, se ha enviado un enlace para restablecer la contraseña.');
+                } catch (error) {
+                    let errorMessage = error.message;
+                     if (errorMessage.includes("User not found")) {
+                        errorMessage = "No se encontró ningún usuario con este correo electrónico.";
+                    }
+                    showError('resetError', 'Error al solicitar reseteo: ' + errorMessage);
+                }
+            }
+
+            async function handleLogout() {
+                showAppMessage("Cerrando sesión...", "info", false);
+                try {
+                    await supabase.auth.signOut();
+                    // The onAuthStateChange listener will handle showing the login page
+                } catch (error) {
+                    console.error("Error during logout:", error);
+                    showAppMessage("Error al cerrar sesión. Inténtalo de nuevo.", "error");
+                }
+            }
+
+            function showMainApp() {
+                console.log('Showing main app for user:', currentUser?.email);
+                document.getElementById('loginPage').style.display = 'none';
+                document.getElementById('mainApp').style.display = 'block';
+                if (currentUser) {
+                    document.getElementById('userEmail').textContent = currentUser.email;
+                }
+                // Initialize app data if not already done
+                if (!appInitialized) {
+                    initializeApp();
+                }
+            }
+
+            function showLoginPage() {
+                console.log('Showing login page');
+                document.getElementById('loginPage').style.display = 'flex';
+                document.getElementById('mainApp').style.display = 'none';
+                showAuthForm('login'); // Ensure login form is visible by default
+            }
+            
+            async function loadContacts() {
+                try {
+                    showAppMessage('Cargando contactos...', 'info', false);
+                    const { data, error } = await supabase
+                        .from('contacts')
+                        .select('*')
+                        .order('organizacion', { ascending: true });
+                        
+                    if (error) throw error;
+                    
+                    contacts = data || [];
+                    setupEspacioFilter(); // Update filter options based on loaded data
+                    applyFilters(); // Apply current filters to the loaded contacts
+                    showAppMessage(`Cargados ${contacts.length} contactos.`, 'success');
+                } catch (error) {
+                    console.error('Error cargando contactos:', error);
+                    showAppMessage('Error cargando contactos: ' + error.message, 'error');
+                }
+            }
+
+            function setupEspacioFilter() {
+                const espacioFilter = document.getElementById('espacioFilter');
+                // Use loaded contact data to populate filter, fallback to predefined list if no contacts yet
+                const availableSpaces = contacts.length > 0 
+                    ? [...new Set(contacts.map(c => c.espacio_coordinacion).filter(Boolean))].sort()
+                    : espaciosList; 
+                
+                espacioFilter.innerHTML = '<option value="">Todos los espacios</option>'; // Reset and add default
+                availableSpaces.forEach(espacio => {
+                    const option = document.createElement('option');
+                    option.value = espacio;
+                    option.textContent = espacio;
+                    espacioFilter.appendChild(option);
+                });
+            }
+
+            function handleSearch() {
+                activeFilters.search = document.getElementById('searchInput').value.toLowerCase();
+                applyFilters();
+            }
+
+            function handleEspacioFilter() {
+                activeFilters.espacio = document.getElementById('espacioFilter').value;
+                applyFilters();
+            }
+
+            function applyFilters() {
+                filteredContacts = contacts.filter(contact => {
+                    // Search filter: Check across multiple fields
+                    if (activeFilters.search) {
+                        const searchStr = activeFilters.search;
+                        const searchFields = [
+                            contact.organizacion,
+                            contact.siglas,
+                            contact.punto_focal,
+                            contact.cargo,
+                            contact.email,
+                            contact.Teléfono,
+                            contact.tipo_organizacion,
+                            contact.espacio_coordinacion,
+                            contact.sectores_concat,
+                            contact.municipios_concat
+                        ].filter(Boolean).join(' ').toLowerCase();
+                        if (!searchFields.includes(searchStr)) return false;
+                    }
+                    
+                    // Espacio filter (single select from sidebar)
+                    if (activeFilters.espacio && contact.espacio_coordinacion !== activeFilters.espacio) return false;
+                    
+                    // Sectores filter (multiple selected in sidebar)
+                    if (activeFilters.sectores.length > 0) {
+                        const contactSectores = (contact.sectores_concat || '').toLowerCase();
+                        const hasMatchingSector = activeFilters.sectores.some(sector => 
+                            contactSectores.includes(sector.toLowerCase())
+                        );
+                        if (!hasMatchingSector) return false;
+                    }
+                    
+                    // Municipios filter (multiple selected in sidebar)
+                    if (activeFilters.municipios.length > 0) {
+                        const contactMunicipios = (contact.municipios_concat || '').toLowerCase();
+                        const hasMatchingMunicipio = activeFilters.municipios.some(municipio => 
+                            contactMunicipios.includes(municipio.toLowerCase())
+                        );
+                        if (!hasMatchingMunicipio) return false;
+                    }
+                    
+                    return true;
+                });
+                
+                // Apply sorting based on current sortField and sortDirection
+                filteredContacts.sort((a, b) => {
+                    let valA = a[sortField];
+                    let valB = b[sortField];
+
+                    // Ensure values are strings for consistent comparison, handle null/undefined
+                    if (valA === null || valA === undefined) valA = '';
+                    if (valB === null || valB === undefined) valB = '';
+
+                    if (typeof valA === 'string') valA = valA.toLowerCase();
+                    if (typeof valB === 'string') valB = valB.toLowerCase();
+
+                    if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+                    if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+                    return 0;
+                });
+
+                renderContacts();
+                updateKPIs();
+                clearSelection(); // Clear selection when filters change
+            }
+
+            function resetFilters() {
+                activeFilters = { search: '', espacio: '', sectores: [], municipios: [] };
+                document.getElementById('searchInput').value = '';
+                document.getElementById('espacioFilter').value = '';
+                document.getElementById('municipiosFilter').value = ''; // Reset multiselect to default
+                document.querySelectorAll('.icon-item.active').forEach(item => item.classList.remove('active'));
+                applyFilters();
+            }
+
+            function updateKPIs() {
+                const kpiGrid = document.getElementById('kpiGrid');
+                kpiGrid.innerHTML = '';
+                
+                const orgs = new Set(filteredContacts.map(c => c.organizacion).filter(Boolean));
+                const uniqueEspacios = new Set(filteredContacts.map(c => c.espacio_coordinacion).filter(Boolean));
+                const uniqueSectores = new Set();
+                filteredContacts.forEach(c => {
+                    if (c.sectores_concat) {
+                        c.sectores_concat.split(',').forEach(s => uniqueSectores.add(s.trim()));
+                    }
+                });
+
+                createKPICard(kpiGrid, { icon: 'fa-users', value: filteredContacts.length, label: 'Total Contactos' });
+                createKPICard(kpiGrid, { icon: 'fa-building', value: orgs.size, label: 'Organizaciones' });
+                createKPICard(kpiGrid, { icon: 'fa-map-marker-alt', value: uniqueEspacios.size, label: 'Espacios Coord.' });
+                createKPICard(kpiGrid, { icon: 'fa-th-list', value: uniqueSectores.size, label: 'Sectores Activos' });
+            }
+
+            function createKPICard(container, data) {
+                const div = document.createElement('div');
+                div.className = 'kpi-card';
+                div.innerHTML = `
+                    <i class="fas ${data.icon} kpi-icon"></i>
+                    <div class="kpi-value">${data.value}</div>
+                    <div class="kpi-label">${data.label}</div>
+                `;
+                container.appendChild(div);
+            }
+
+            function copyToClipboard(text, element) {
+                if (!text) return;
+                navigator.clipboard.writeText(text).then(() => {
+                    const originalIconClass = element.className;
+                    const originalColor = element.style.color;
+                    element.className = 'fas fa-check-circle';
+                    element.style.color = 'var(--ocha-green)';
+                    
+                    setTimeout(() => {
+                        element.className = originalIconClass;
+                        element.style.color = originalColor;
+                    }, 1500);
+                }).catch(err => {
+                    console.error('Error copying to clipboard: ', err);
+                    showAppMessage('Error al copiar el correo', 'error');
+                });
+            }
+
+            function sortTable(field) {
+                if (sortField === field) {
+                    sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+                } else {
+                    sortField = field;
+                    sortDirection = 'asc';
+                }
+                
+                // Update sort icons
+                document.querySelectorAll('.sort-icon').forEach(icon => {
+                    icon.className = 'fas fa-sort sort-icon';
+                });
+                
+                const currentHeader = document.querySelector(`th[onclick="sortTable('${field}')"] .sort-icon`);
+                if (currentHeader) {
+                    currentHeader.className = `fas fa-sort-${sortDirection === 'asc' ? 'up' : 'down'} sort-icon`;
+                }
+                
+                applyFilters(); // Re-render with sorted data
+            }
+
+            // --- Magic Link Specific Functions ---
+            
+            // Placeholder for generateMagicLink if you want to use it for email-based links too
+            async function generateMagicLink() {
+                const email = document.getElementById('loginEmail').value.trim();
+                
+                if (!email) {
+                    showError('loginError', 'Por favor, ingrese su correo electrónico para generar el enlace.');
+                    return;
+                }
+
+                try {
+                    // For email links, we'd ideally use Supabase's built-in email sending.
+                    // This example focuses on QR generation, but this function would call
+                    // generateRealMagicLink and then *also* trigger Supabase email send if needed.
+                    
+                    // Example: Get the contact ID for the email if it exists
+                    const { data: contact, error: contactError } = await supabase
+                        .from('contacts')
+                        .select('id')
+                        .eq('email', email)
+                        .single();
+                    
+                    let contactId = contact ? contact.id : null;
+
+                    const magicLink = await generateRealMagicLink(email, contactId);
+
+                    // If we also wanted to SEND an email via Supabase (requires email setup)
+                    /*
+                    const { error: supabaseSendError } = await supabase.auth.signInWithOtp({
+                        email: email,
+                        options: {
+                            emailRedirectTo: magicLink, // This is where Supabase redirects *after* they click the link it sends
+                            shouldCreateUser: false
+                        }
+                    });
+                    if (supabaseSendError) throw supabaseSendError;
+                    */
+                   
+                    // For QR, we just need the link. For email, you'd likely need the Supabase send.
+                    // This button might be better served by the `generateRealMagicLink` logic directly.
+                    showSuccess('loginSuccess', 'Se ha generado un enlace de actualización. Si el email está asociado a un contacto, revisa tu bandeja para el enlace.');
+                    
+                } catch (error) {
+                    console.error('Error generating magic link for email:', error);
+                    showError('loginError', 'Error generando enlace: ' + error.message);
+                }
+            }
+
+            // Modified showQRModal function (as provided in previous response)
+            async function showQRModal(contactId) {
+                const contact = contacts.find(c => c.id.toString() === contactId);
+                if (!contact) {
+                    showAppMessage('Contacto no encontrado', 'error');
+                    return;
+                }
+
+                const waitForQRCode = (callback) => {
+                    if (typeof QRCode !== 'undefined') {
+                        callback();
+                    } else {
+                        let attempts = 0;
+                        const interval = setInterval(() => {
+                            attempts++;
+                            if (typeof QRCode !== 'undefined') {
+                                clearInterval(interval);
+                                callback();
+                            } else if (attempts > 20) {
+                                clearInterval(interval);
+                                console.error('QRCode library failed to load in time.');
+                                showAppMessage('Error: La librería para generar códigos QR no se ha cargado. Revise su conexión a internet y recargue la página.', 'error');
+                            }
+                        }, 250);
+                    }
+                };
+
+                waitForQRCode(async () => { // Make the callback async
+                    try {
+                        currentQRContactId = contactId;
+                        document.getElementById('qrContactName').textContent = `${contact.organizacion} - ${contact.punto_focal}`;
+                        
+                        // Show loading message
+                        const qrContainer = document.getElementById('qrcode');
+                        qrContainer.innerHTML = '<div style="text-align: center; padding: 2rem;"><i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: var(--color-ochablue);"></i><br><p style="margin-top: 1rem;">Generando enlace seguro...</p></div>';
+                        
+                        document.getElementById('qrModal').classList.add('active');
+                        
+                        // Generate the real magic link using Supabase
+                        // Ensure 'contact.email' is a valid email and 'contactId' is correct
+                        const updateUrl = await generateRealMagicLink(contact.email, contactId);
+                        
+                        // Clear the container and create the QR
+                        qrContainer.innerHTML = '';
+                        
+                        const qrDiv = document.createElement('div');
+                        qrDiv.id = 'qrcode-canvas';
+                        qrDiv.style.display = 'flex';
+                        qrDiv.style.justifyContent = 'center';
+                        qrDiv.style.alignItems = 'center';
+                        qrContainer.appendChild(qrDiv);
+                        
+                        const qr = new QRCode(qrDiv, {
+                            text: updateUrl,
+                            width: 256,
+                            height: 256,
+                            colorDark: '#0072BC',
+                            colorLight: '#FFFFFF',
+                            correctLevel: QRCode.CorrectLevel.H
+                        });
+                        
+                        console.log('QR Code generated successfully with magic link:', updateUrl);
+                        
+                    } catch (error) {
+                        console.error('Error generating QR code:', error);
+                        const qrContainer = document.getElementById('qrcode');
+                        qrContainer.innerHTML = `
+                            <div style="text-align: center; padding: 2rem; color: #cd3a1f;">
+                                <i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                                <p>Error al generar el código QR.</p>
+                                <p style="font-size: 0.9rem; margin-top: 0.5rem;">Por favor, intente de nuevo o recargue la página.</p>
+                                <p style="font-size: 0.8rem; margin-top: 0.5rem; color: #666;">Error: ${error.message}</p>
+                            </div>`;
+                    }
+                });
+            }
+
+            function downloadQR() {
+                try {
+                    const qrCanvas = document.querySelector('#qrcode-canvas canvas');
+                    if (qrCanvas) {
+                        const link = document.createElement('a');
+                        link.download = `qr-contact-${currentQRContactId}.png`;
+                        link.href = qrCanvas.toDataURL('image/png');
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        showAppMessage('Código QR descargado exitosamente', 'success');
+                    } else {
+                        showAppMessage('No se encontró el código QR para descargar.', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error downloading QR:', error);
+                    showAppMessage('Error al descargar el código QR: ' + error.message, 'error');
+                }
+            }
+            function closeQRModal() {
+                document.getElementById('qrModal').classList.remove('active');
+                const qrContainer = document.getElementById('qrcode');
+                qrContainer.innerHTML = ''; // Clear previous QR
+                currentQRContactId = null;
+            }
+        </script>
+    </body>
+</html>

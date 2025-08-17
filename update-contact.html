@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Actualizar Contacto - OCHA Maracaibo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #0072BC;
+            margin-bottom: 10px;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #0072BC;
+        }
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #0072BC;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .form-control:focus {
+            outline: none;
+            border-color: #0072BC;
+        }
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background-color: #0072BC;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background-color: #005a8a;
+        }
+        .btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .message {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .status.valid {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .checkbox-item:hover {
+            background-color: #f8f9fa;
+        }
+        .checkbox-item input[type="checkbox"] {
+            margin: 0;
+            cursor: pointer;
+        }
+        select.form-control {
+            background-color: white;
+            cursor: pointer;
+        }
+        #content {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="https://www.unocha.org/themes/custom/common_design_subtheme/img/logos/ocha-logo-blue.svg" alt="OCHA Logo" style="height: 50px; margin-bottom: 15px;">
+            <h1>OCHA Maracaibo</h1>
+            <p>Actualizar Contacto</p>
+        </div>
+
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Verificando enlace y cargando información...</p>
+        </div>
+
+        <div id="content">
+            <div id="status"></div>
+            <div id="message"></div>
+            <form id="updateForm">
+                <div class="form-group">
+                    <label class="form-label">Organización *</label>
+                    <input type="text" id="organizacion" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Siglas</label>
+                    <input type="text" id="siglas" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Punto Focal *</label>
+                    <input type="text" id="punto_focal" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Cargo</label>
+                    <input type="text" id="cargo" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email *</label>
+                    <input type="email" id="email" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Teléfono</label>
+                    <input type="tel" id="telefono" class="form-control" placeholder="+58 414-1234567">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Tipo de Organización</label>
+                    <select id="tipo_organizacion" class="form-control">
+                        <option value="">Seleccionar tipo</option>
+                        <option value="ONG Nacional">ONG Nacional</option>
+                        <option value="ONG Internacional">ONG Internacional</option>
+                        <option value="Agencia UN">Agencia UN</option>
+                        <option value="Gobierno Local">Gobierno Local</option>
+                        <option value="Gobierno Nacional">Gobierno Nacional</option>
+                        <option value="Organización Religiosa">Organización Religiosa</option>
+                        <option value="Sector Privado">Sector Privado</option>
+                        <option value="Academia">Academia</option>
+                        <option value="Red/Coalición">Red/Coalición</option>
+                        <option value="Otro">Otro</option>
+                    </select>
+                </div>
+
+                <h4 style="color: #0072BC; margin: 25px 0 15px; border-bottom: 2px solid #e2f3fe; padding-bottom: 10px;">
+                    Espacios de Coordinación
+                </h4>
+                <div class="checkbox-group">
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="espacio_foro_zulia" value="Foro Local de Coordinación Zulia">
+                        Foro Local de Coordinación Zulia
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="espacio_foro_falcon" value="Foro Local de Coordinación Falcón">
+                        Foro Local de Coordinación Falcón
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="espacio_sur_lago" value="Espacio de Coordinación Sur del Lago">
+                        Espacio de Coordinación Sur del Lago
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="espacio_trujillo" value="Espacio de Coordinación Trujillo">
+                        Espacio de Coordinación Trujillo
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="espacio_lara" value="Espacio de Coordinación Lara">
+                        Espacio de Coordinación Lara
+                    </label>
+                </div>
+
+                <h4 style="color: #0072BC; margin: 25px 0 15px; border-bottom: 2px solid #e2f3fe; padding-bottom: 10px;">
+                    Sectores
+                </h4>
+                <div class="checkbox-group">
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="sector_agua" value="Agua, saneamiento e higiene">
+                        Agua, saneamiento e higiene
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="sector_alojamiento" value="Alojamiento, energía y enseres">
+                        Alojamiento, energía y enseres
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="sector_educacion" value="Educación">
+                        Educación
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="sector_nutricion" value="Nutrición">
+                        Nutrición
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="sector_proteccion" value="Protección General">
+                        Protección General
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="sector_nna" value="Protección Niños, Niñas, Adolescentes">
+                        Protección Niños, Niñas, Adolescentes
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="sector_vbg" value="Protección Violencia de Género">
+                        Protección Violencia de Género
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="sector_salud" value="Salud">
+                        Salud
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="sector_alimentaria" value="Seguridad alimentaria">
+                        Seguridad alimentaria
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="sector_transversal" value="Transversal">
+                        Transversal
+                    </label>
+                </div>
+
+                <h4 style="color: #0072BC; margin: 25px 0 15px; border-bottom: 2px solid #e2f3fe; padding-bottom: 10px;">
+                    Participación
+                </h4>
+                <div class="checkbox-group">
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="reporta_345w">
+                        Reporta en el 345W
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="socio_implementador">
+                        Socio Implementador
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="organizacion_lider">
+                        Organización Líder
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="participacion_flc">
+                        Participación FLC
+                    </label>
+                </div>
+
+                <button type="submit" class="btn" id="submitBtn">
+                    Actualizar Información
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Configuración de Supabase
+        const supabase = window.supabase.createClient(
+            'https://gvobuytrtqxyvognivdt.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd2b2J1eXRydHF4eXZvZ25pdmR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwNDczMTQsImV4cCI6MjA3MDYyMzMxNH0.34oUejp5IwN5vfFXSEPoJRZbFDv7b2aWHpDuE1pV1nE'
+        );
+
+        let contactId = null;
+        let magicToken = null;
+
+        function getParams() {
+            const params = new URLSearchParams(window.location.search);
+            contactId = params.get('id');
+            magicToken = params.get('token');
+            console.log('Contact ID:', contactId);
+            console.log('Token presente:', !!magicToken);
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('content').style.display = 'block';
+        }
+
+        function showStatus(text, type) {
+            document.getElementById('status').innerHTML = '<div class="status ' + type + '">' + text + '</div>';
+        }
+
+        function showMessage(text, type) {
+            document.getElementById('message').innerHTML = '<div class="message ' + type + '">' + text + '</div>';
+        }
+
+        async function validateToken(token) {
+            try {
+                console.log('Validando token...');
+                const result = await supabase.rpc('validate_magic_link', {
+                    p_token: token,
+                    p_mark_as_used: false
+                });
+                
+                if (result.error) {
+                    console.error('Error validando token:', result.error);
+                    return { isValid: false, message: 'Error de validación' };
+                }
+                
+                if (result.data && result.data.length > 0) {
+                    const data = result.data[0];
+                    return {
+                        isValid: data.is_valid,
+                        contactId: data.contact_id,
+                        message: data.message
+                    };
+                }
+                
+                return { isValid: false, message: 'Token no encontrado' };
+            } catch (error) {
+                console.error('Error en validación:', error);
+                return { isValid: false, message: 'Error: ' + error.message };
+            }
+        }
+
+        async function loadContact() {
+            try {
+                console.log('Cargando contacto ID:', contactId);
+                
+                const result = await supabase
+                    .from('contacts')
+                    .select('*')
+                    .eq('id', contactId)
+                    .single();
+                    
+                if (result.error) {
+                    console.error('Error cargando contacto:', result.error);
+                    showStatus('Error: Contacto no encontrado', 'error');
+                    return;
+                }
+                
+                const contact = result.data;
+                console.log('Contacto cargado:', contact);
+                
+                // Llenar formulario con los datos del contacto
+                document.getElementById('organizacion').value = contact.organizacion || '';
+                document.getElementById('siglas').value = contact.siglas || '';
+                document.getElementById('punto_focal').value = contact.punto_focal || '';
+                document.getElementById('cargo').value = contact.cargo || '';
+                document.getElementById('email').value = contact.email || '';
+                document.getElementById('telefono').value = contact.Teléfono || '';
+                document.getElementById('tipo_organizacion').value = contact.tipo_organizacion || '';
+                
+                // Cargar espacios de coordinación
+                const espacios = (contact.espacio_coordinacion || '').split(',').map(e => e.trim());
+                document.getElementById('espacio_foro_zulia').checked = espacios.includes('Foro Local de Coordinación Zulia');
+                document.getElementById('espacio_foro_falcon').checked = espacios.includes('Foro Local de Coordinación Falcón');
+                document.getElementById('espacio_sur_lago').checked = espacios.includes('Espacio de Coordinación Sur del Lago');
+                document.getElementById('espacio_trujillo').checked = espacios.includes('Espacio de Coordinación Trujillo');
+                document.getElementById('espacio_lara').checked = espacios.includes('Espacio de Coordinación Lara');
+                
+                // Cargar sectores
+                const sectores = (contact.sectores_concat || '').split(',').map(s => s.trim());
+                document.getElementById('sector_agua').checked = sectores.includes('Agua, saneamiento e higiene');
+                document.getElementById('sector_alojamiento').checked = sectores.includes('Alojamiento, energía y enseres');
+                document.getElementById('sector_educacion').checked = sectores.includes('Educación');
+                document.getElementById('sector_nutricion').checked = sectores.includes('Nutrición');
+                document.getElementById('sector_proteccion').checked = sectores.includes('Protección General');
+                document.getElementById('sector_nna').checked = sectores.includes('Protección Niños, Niñas, Adolescentes');
+                document.getElementById('sector_vbg').checked = sectores.includes('Protección Violencia de Género');
+                document.getElementById('sector_salud').checked = sectores.includes('Salud');
+                document.getElementById('sector_alimentaria').checked = sectores.includes('Seguridad alimentaria');
+                document.getElementById('sector_transversal').checked = sectores.includes('Transversal');
+                
+                // Cargar participación
+                document.getElementById('reporta_345w').checked = contact.reporta_345w || false;
+                document.getElementById('socio_implementador').checked = contact.socio_implementador || false;
+                document.getElementById('organizacion_lider').checked = contact.organizacion_lider || false;
+                document.getElementById('participacion_flc').checked = contact.participacion_flc || false;
+                
+                showStatus('Información cargada correctamente', 'valid');
+                
+            } catch (error) {
+                console.error('Error cargando contacto:', error);
+                showStatus('Error cargando contacto: ' + error.message, 'error');
+            }
+        }
+
+        async function handleSubmit(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Actualizando...';
+            
+            try {
+                const contactData = {
+                    organizacion: document.getElementById('organizacion').value.trim(),
+                    siglas: document.getElementById('siglas').value.trim(),
+                    punto_focal: document.getElementById('punto_focal').value.trim(),
+                    cargo: document.getElementById('cargo').value.trim(),
+                    email: document.getElementById('email').value.trim().toLowerCase(),
+                    Teléfono: document.getElementById('telefono').value.trim()
+                };
+                
+                console.log('Actualizando contacto con datos:', contactData);
+                
+                const result = await supabase
+                    .from('contacts')
+                    .update(contactData)
+                    .eq('id', contactId);
+                    
+                if (result.error) {
+                    console.error('Error actualizando:', result.error);
+                    throw result.error;
+                }
+                
+                console.log('Contacto actualizado exitosamente');
+                
+                // Marcar token como usado si se usó magic link
+                if (magicToken) {
+                    console.log('Marcando token como usado...');
+                    await supabase.rpc('validate_magic_link', {
+                        p_token: magicToken,
+                        p_mark_as_used: true
+                    });
+                }
+                
+                showMessage('¡Información actualizada exitosamente!', 'success');
+                submitBtn.textContent = 'Actualizado ✓';
+                
+                // Deshabilitar formulario después de actualizar
+                setTimeout(() => {
+                    const inputs = document.querySelectorAll('input');
+                    inputs.forEach(input => input.disabled = true);
+                }, 1000);
+                
+            } catch (error) {
+                console.error('Error actualizando contacto:', error);
+                showMessage('Error al actualizar: ' + error.message, 'error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Actualizar Información';
+            }
+        }
+
+        async function init() {
+            console.log('Iniciando aplicación...');
+            
+            getParams();
+            
+            // Verificar que tenemos los parámetros necesarios
+            if (!contactId && !magicToken) {
+                hideLoading();
+                showStatus('Error: Enlace inválido - faltan parámetros', 'error');
+                return;
+            }
+            
+            // Si hay token, validarlo primero
+            if (magicToken) {
+                console.log('Validando magic link...');
+                const validation = await validateToken(magicToken);
+                
+                if (!validation.isValid) {
+                    hideLoading();
+                    showStatus('Error: ' + validation.message, 'error');
+                    return;
+                }
+                
+                // Usar el contactId del token validado
+                contactId = validation.contactId;
+                console.log('Token válido, contactId:', contactId);
+            }
+            
+            // Cargar datos del contacto
+            await loadContact();
+            hideLoading();
+        }
+
+        // Inicializar cuando se carga la página
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM cargado, configurando eventos...');
+            document.getElementById('updateForm').addEventListener('submit', handleSubmit);
+            init();
+        });
+    </script>
+</body>
+</html>
