@@ -1786,7 +1786,7 @@
             // Helper function to generate a secure random token
             function generateSecureToken() {
                 if (window.crypto && window.crypto.getRandomValues) {
-                    const array = new Uint8Array(32); // 256 bits
+                    const array = new Uint8Array(16); // 128 bits
                     window.crypto.getRandomValues(array);
                     // Convert to hex string
                     return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
@@ -1850,7 +1850,7 @@ function getAppConfig() {
         console.log('🔧 Modo desarrollo detectado');
     } else if (hostname.includes('github.io')) {
         // GitHub Pages - usar la URL completa incluyendo el path del repositorio
-        config.baseUrl = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '');
+        config.baseUrl = 'https://ochavenezuela.github.io/DirectorioSubOficinaOCHAMaracaibo';
         config.isGithubPages = true;
         console.log('🚀 GitHub Pages detectado');
     } else {
@@ -1884,7 +1884,7 @@ async function generateRealMagicLink(email, contactId) {
         await saveMagicLinkToken(contactId, email, magicLinkToken);
         
         // Construir el enlace completo
-        const magicLink = `${redirectUrl}?token=${magicLinkToken}&id=${contactId}`;
+    		const magicLink = `${redirectUrl}?t=${magicLinkToken.substring(0, 16)}&i=${contactId}`;
         
         console.log("✅ Magic Link generado:", magicLink);
         return magicLink;
@@ -3361,7 +3361,7 @@ async function generateRealMagicLink(email, contactId) {
                             height: 256,
                             colorDark: '#0072BC',
                             colorLight: '#FFFFFF',
-                            correctLevel: QRCode.CorrectLevel.H
+                            correctLevel: QRCode.CorrectLevel.L
                         });
                         
                         console.log('QR Code generated successfully with magic link:', updateUrl);
