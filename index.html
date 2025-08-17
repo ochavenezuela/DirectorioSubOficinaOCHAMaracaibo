@@ -1849,8 +1849,8 @@ function getAppConfig() {
         config.isDevelopment = true;
         console.log('🔧 Modo desarrollo detectado');
     } else if (hostname.includes('github.io')) {
-        // GitHub Pages
-        config.baseUrl = `${protocol}//${window.location.host}`;
+        // GitHub Pages - usar la URL completa incluyendo el path del repositorio
+        config.baseUrl = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '');
         config.isGithubPages = true;
         console.log('🚀 GitHub Pages detectado');
     } else {
@@ -3408,3 +3408,4 @@ async function generateRealMagicLink(email, contactId) {
         </script>
     </body>
 </html>
+
