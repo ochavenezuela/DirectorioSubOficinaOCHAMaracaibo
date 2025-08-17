@@ -1692,184 +1692,164 @@
         </div>
 
         <script>
-            // Supabase Configuration
-            const SUPABASE_URL = 'https://gvobuytrtqxyvognivdt.supabase.co';
-            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd2b2J1eXRydHF4eXZvZ25pdmR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwNDczMTQsImV4cCI6MjA3MDYyMzMxNH0.34oUejp5IwN5vfFXSEPoJRZbFDv7b2aWHpDuE1pV1nE';
-            const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Supabase Configuration
+const SUPABASE_URL = 'https://gvobuytrtqxyvognivdt.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd2b2J1eXRydHF4eXZvZ25pdmR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwNDczMTQsImV4cCI6MjA3MDYyMzMxNH0.34oUejp5IwN5vfFXSEPoJRZbFDv7b2aWHpDuE1pV1nE';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-            // Admin Configuration
-            const ADMIN_PASSWORD = 'coordinacion123'; // Cambiar por una clave segura
-            const GROUP_PASSWORD = 'coordinacion123'; // Cambiar por una clave segura
-            
-            // Global Variables
-            let currentUser = null;
-            let contacts = [];
-            let filteredContacts = [];
-            let selectedContacts = new Set();
-            let activeFilters = { search: '', espacio: '', sectores: [], municipios: [] };
-            let appInitialized = false;
-            let contactChangesChannel = null;
-            let sortField = 'organizacion';
-            let sortDirection = 'asc';
-            let pendingDeleteId = null;
-            let pendingAdminAction = null;
-            let currentQRContactId = null;
+// Admin Configuration
+const ADMIN_PASSWORD = 'coordinacion123';
+const GROUP_PASSWORD = 'coordinacion123';
 
-            // Password toggle function
-            function togglePassword(fieldId) {
-                const passwordField = document.getElementById(fieldId);
-                const toggleIcon = document.getElementById(fieldId + 'ToggleIcon');
-                
-                if (passwordField.type === 'password') {
-                    passwordField.type = 'text';
-                    toggleIcon.classList.remove('fa-eye');
-                    toggleIcon.classList.add('fa-eye-slash');
-                } else {
-                    passwordField.type = 'password';
-                    toggleIcon.classList.remove('fa-eye-slash');
-                    toggleIcon.classList.add('fa-eye');
-                }
-            }
+// Global Variables
+let currentUser = null;
+let contacts = [];
+let filteredContacts = [];
+let selectedContacts = new Set();
+let activeFilters = { search: '', espacio: '', sectores: [], municipios: [] };
+let appInitialized = false;
+let contactChangesChannel = null;
+let sortField = 'organizacion';
+let sortDirection = 'asc';
+let pendingDeleteId = null;
+let pendingAdminAction = null;
+let currentQRContactId = null;
 
-            // Data lists
-            const sectoresList = [
-                'Agua, saneamiento e higiene',
-                'Alojamiento, energía y enseres',
-                'Educación',
-                'Nutrición',
-                'Protección General',
-                'Protección Niños, Niñas, Adolescentes',
-                'Protección Violencia de Género',
-                'Salud',
-                'Seguridad alimentaria',
-                'Transversal'
-            ];
-
-            const espaciosList = [
-                'Foro Local de Coordinación Zulia',
-                'Foro Local de Coordinación Falcón',
-                'Espacio de Coordinación Sur del Lago',
-                'Espacio de Coordinación Trujillo',
-                'Espacio de Coordinación Lara'
-            ];
-
-            const municipiosList = [
-                'Almirante Padilla', 'Andrés Eloy Blanco', 'Baralt', 'Boconó', 'Bolívar', 'Cabimas',
-                'Cacique Manaure', 'Candelaria', 'Carache', 'Carirubana', 'Catatumbo',
-                'Colina', 'Colón', 'Crespo', 'Dabajuro', 'Escuque', 'Falcón', 'Federación', 'Francisco Javier Pulgar',
-                'Indígena Bolivariano Guajira', 'Iribarren', 'Jesus Enrique Lossada', 'Jesus Maria Semprum',
-                'Jiménez', 'Juan Vicente Campo Elías', 'La Cañada De Urdaneta', 'La Ceiba', 'Lagunillas',
-                'Los Taques', 'Machiques De Perijá', 'Mara', 'Maracaibo', 'Mauroa', 'Miranda',
-                'Monseñor Iturriza', 'Morán', 'Palavecino', 'Palmasola', 'Pampanito', 'Pampán',
-                'Petit', 'Píritu', 'Rafael Rangel', 'Rosario De Perijá', 'San Francisco',
-                'San Rafael De Carvajal', 'Santa Rita', 'Silva', 'Simón Planas', 'Sucre',
-                'Tocópero', 'Torres', 'Trujillo', 'Urdaneta', 'Urumaco', 'Valera',
-                'Valmore Rodríguez', 'Zamora'
-            ];
-
-            // Sector icons mapping
-            const sectorIcons = {
-                'Agua, saneamiento e higiene': 'https://cdn-assets-cloud.frontify.com/s3/frontify-cloud-files-us/eyJwYXRoIjoiZnJvbnRpZnlcL2FjY291bnRzXC84MVwvMTY2NjYzXC9wcm9qZWN0c1wvMjUxMDIzXC9hc3NldHNcLzlkXC80MzY2OTIwXC83MWE1OTcyMzkyYTJkM2VlNDgxNmQ1ODU0MGNmNTliYS0xNTkxNzIxMTgyLnN2ZyJ9:frontify:MgH6UY5xqyfKx77ec3VRFtR1lOv93RJDs8MqbwFkJpM?width=64',
-                'Alojamiento, energía y enseres': 'https://cdn-assets-cloud.frontify.com/s3/frontify-cloud-files-us/eyJwYXRoIjoiZnJvbnRpZnlcL2FjY291bnRzXC84MVwvMTY2NjYzXC9wcm9qZWN0c1wvMjUxMDIzXC9hc3NldHNcL2NmXC80MzY2ODEyXC8xZTI5NzQzMzcyOTE0YjE2MDkxNTI0N2NkZGMwY2E3NC0xNTkxNzE4OTIxLnN2ZyJ9:frontify:FUBxqK8yAh-cPqjcmhGA4pR442WpMZP8wrc1C9PJZn8?width=64', 
-                'Educación': 'https://cdn-assets-cloud.frontify.com/s3/frontify-cloud-files-us/eyJwYXRoIjoiZnJvbnRpZnlcL2FjY291bnRzXC84MVwvMTY2NjYzXC9wcm9qZWN0c1wvMjUxMDIzXC9hc3NldHNcLzJjXC80MzY0NjkwXC8xYTIwZTMxZTMzOTEwY2U3YTA4Yjg5ODVhOGU5Mjg0My0xNTkxNjkzNjA1LnN2ZyJ9:frontify:90NzWxvX_2V0BDPOGueYpIZfuSZvJfOer4Pkvq4dHBA?width=64',
-                'Protección General': 'https://cdn-assets-cloud.frontify.com/s3/frontify-cloud-files-us/eyJwYXRoIjoiZnJvbnRpZnlcL2FjY291bnRzXC84MVwvMTY2NjYzXC9wcm9qZWN0c1wvMjUxMDIzXC9hc3NldHNcL2EyXC80MzY1OTYwXC8zYjFiMDY2MTAzYjIyMWY0MTI4YTVkNzkxYmRjOTE3YS0xNTkxNzA4MzI2LnN2ZyJ9:frontify:7lTtjGE2P2Nbz_525sMoZikLkHSh9tegag19Prx_SZc?width=64',
-                'Protección Niños, Niñas, Adolescentes': 'https://cdn-assets-cloud.frontify.com/s3/frontify-cloud-files-us/eyJwYXRoIjoiZnJvbnRpZnlcL2FjY291bnRzXC84MVwvMTY2NjYzXC9wcm9qZWN0c1wvMjUxMDIzXC9hc3NldHNcL2EyXC80MzY1OTYwXC8zYjFiMDY2MTAzYjIyMWY0MTI4YTVkNzkxYmRjOTE3YS0xNTkxNzA4MzI2LnN2ZyJ9:frontify:7lTtjGE2P2Nbz_525sMoZikLkHSh9tegag19Prx_SZc?width=64',
-                'Protección Violencia de Género': 'https://cdn-assets-cloud.frontify.com/s3/frontify-cloud-files-us/eyJwYXRoIjoiZnJvbnRpZnlcL2FjY291bnRzXC84MVwvMTY2NjYzXC9wcm9qZWN0c1wvMjUxMDIzXC9hc3NldHNcL2EyXC80MzY1OTYwXC8zYjFiMDY2MTAzYjIyMWY0MTI4YTVkNzkxYmRjOTE3YS0xNTkxNzA4MzI2LnN2ZyJ9:frontify:7lTtjGE2P2Nbz_525sMoZikLkHSh9tegag19Prx_SZc?width=64',
-                'Salud': 'https://cdn-assets-cloud.frontify.com/s3/frontify-cloud-files-us/eyJwYXRoIjoiZnJvbnRpZnlcL2FjY291bnRzXC84MVwvMTY2NjYzXC9wcm9qZWN0c1wvMjUxMDIzXC9hc3NldHNcLzQwXC80MzY1MDA0XC9jNDk5OWE4ZDk2ZDE1YjZhNzIxMTQ5ZWU4YTFiMTkwMy0xNTkxNzAxMjUzLnN2ZyJ9:frontify:R0CU010gVeFON_MaMY38IILJz2LXMajqem4P1TiGwQk?width=64',
-                'Seguridad alimentaria': 'https://cdn-assets-cloud.frontify.com/s3/frontify-cloud-files-us/eyJwYXRoIjoiZnJvbnRpZnlcL2FjY291bnRzXC84MVwvMTY2NjYzXC9wcm9qZWN0c1wvMjUxMDIzXC9hc3NldHNcL2I0XC80MzY0Nzc1XC8xYjhhNmIxNzZlZTQ4MThjZjJjOGE5NDQyN2FjMjNjYi0xNTkxNjk0MjY5LnN2ZyJ9:frontify:tXhekXovZmafEC1xe1vMSYzRz4aiC23x9HTHlGsrz4U?width=64',
-                'Nutrición': 'https://cdn-assets-cloud.frontify.com/s3/frontify-cloud-files-us/eyJwYXRoIjoiZnJvbnRpZnlcL2FjY291bnRzXC84MVwvMTY2NjYzXC9wcm9qZWN0c1wvMjUxMDIzXC9hc3NldHNcLzQzXC80MzY1NzM1XC82ODU2MWExNDAzMzc0NzBjNDE5MGFmYWY5NTFkNzU4Yi0xNTkxNzA2NjI1LnN2ZyJ9:frontify:3rsyLJgQXbU3Y015aKrjd1ohrB4PI_KPd723_KhjCWA?width=64',
-                'Transversal': 'https://images4.imagebam.com/ef/ae/80/ME150QRY_o.jpg' // Example fallback icon
-            };
-
-            // --- NEW FUNCTIONS FOR REAL MAGIC LINKS ---
-
-            // Helper function to generate a secure random token
-            function generateSecureToken() {
-                if (window.crypto && window.crypto.getRandomValues) {
-                    const array = new Uint8Array(16); // 128 bits
-                    window.crypto.getRandomValues(array);
-                    // Convert to hex string
-                    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
-                } else {
-                    // Fallback for older environments (less secure)
-                    console.warn("Using fallback token generation. Consider using a secure context (HTTPS).");
-                    let token = '';
-                    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-                    for (let i = 0; i < 64; i++) { // Generate a longer token for fallback
-                        token += characters.charAt(Math.floor(Math.random() * characters.length));
-                    }
-                    return token;
-                }
-            }
-
-            // Function to save the magic link token in Supabase
-            async function saveMagicLinkToken(contactId, email, token) {
-                try {
-                    const expiresAt = new Date();
-                    expiresAt.setHours(expiresAt.getHours() + 2); // Token expires in 2 hours
-                    
-                    const { error } = await supabase
-                        .from('magic_links')
-                        .upsert({
-                            contact_id: contactId,
-                            email: email,
-                            token: token,
-                            expires_at: expiresAt.toISOString(),
-                            used: false
-                        });
-                        
-                    if (error) {
-                        console.error('Error saving magic link token:', error);
-                        throw error; // Re-throw to be caught by the caller
-                    }
-                    console.log(`Magic link token saved for ${email} (ID: ${contactId})`);
-                } catch (error) {
-                    console.error('Error in saveMagicLinkToken:', error);
-                    // Handle error, maybe show a message to the user
-                }
-            }
-
-            // Function to generate a real Supabase magic link
-            // Configuración automática de entorno
-function getAppConfig() {
-    const hostname = window.location.hostname;
-    const protocol = window.location.protocol;
-    const port = window.location.port;
+// Password toggle function
+function togglePassword(fieldId) {
+    const passwordField = document.getElementById(fieldId);
+    const toggleIcon = document.getElementById(fieldId + 'ToggleIcon');
     
-    let config = {
-        baseUrl: '',
+    if (passwordField.type === 'password') {
+        passwordField.type = 'text';
+        toggleIcon.classList.remove('fa-eye');
+        toggleIcon.classList.add('fa-eye-slash');
+    } else {
+        passwordField.type = 'password';
+        toggleIcon.classList.remove('fa-eye-slash');
+        toggleIcon.classList.add('fa-eye');
+    }
+}
+
+// Data lists
+const sectoresList = [
+    'Agua, saneamiento e higiene',
+    'Alojamiento, energía y enseres',
+    'Educación',
+    'Nutrición',
+    'Protección General',
+    'Protección Niños, Niñas, Adolescentes',
+    'Protección Violencia de Género',
+    'Salud',
+    'Seguridad alimentaria',
+    'Transversal'
+];
+
+const espaciosList = [
+    'Foro Local de Coordinación Zulia',
+    'Foro Local de Coordinación Falcón',
+    'Espacio de Coordinación Sur del Lago',
+    'Espacio de Coordinación Trujillo',
+    'Espacio de Coordinación Lara'
+];
+
+const municipiosList = [
+    'Almirante Padilla', 'Andrés Eloy Blanco', 'Baralt', 'Boconó', 'Bolívar', 'Cabimas',
+    'Cacique Manaure', 'Candelaria', 'Carache', 'Carirubana', 'Catatumbo',
+    'Colina', 'Colón', 'Crespo', 'Dabajuro', 'Escuque', 'Falcón', 'Federación', 'Francisco Javier Pulgar',
+    'Indígena Bolivariano Guajira', 'Iribarren', 'Jesus Enrique Lossada', 'Jesus Maria Semprum',
+    'Jiménez', 'Juan Vicente Campo Elías', 'La Cañada De Urdaneta', 'La Ceiba', 'Lagunillas',
+    'Los Taques', 'Machiques De Perijá', 'Mara', 'Maracaibo', 'Mauroa', 'Miranda',
+    'Monseñor Iturriza', 'Morán', 'Palavecino', 'Palmasola', 'Pampanito', 'Pampán',
+    'Petit', 'Píritu', 'Rafael Rangel', 'Rosario De Perijá', 'San Francisco',
+    'San Rafael De Carvajal', 'Santa Rita', 'Silva', 'Simón Planas', 'Sucre',
+    'Tocópero', 'Torres', 'Trujillo', 'Urdaneta', 'Urumaco', 'Valera',
+    'Valmore Rodríguez', 'Zamora'
+];
+
+// Sector icons mapping
+const sectorIcons = {
+    'Agua, saneamiento e higiene': 'https://cdn-assets-cloud.frontify.com/s3/frontify-cloud-files-us/eyJwYXRoIjoiZnJvbnRpZnlcL2FjY291bnRzXC84MVwvMTY2NjYzXC9wcm9qZWN0c1wvMjUxMDIzXC9hc3NldHNcLzlkXC80MzY2OTIwXC83MWE1OTcyMzkyYTJkM2VlNDgxNmQ1ODU0MGNmNTliYS0xNTkxNzIxMTgyLnN2ZyJ9:frontify:MgH6UY5xqyfKx77ec3VRFtR1lOv93RJDs8MqbwFkJpM?width=64',
+    'Alojamiento, energía y enseres': 'https://cdn-assets-cloud.frontify.com/s3/frontify-cloud-files-us/eyJwYXRoIjoiZnJvbnRpZnlcL2FjY291bnRzXC84MVwvMTY2NjYzXC9wcm9qZWN0c1wvMjUxMDIzXC9hc3NldHNcL2NmXC80MzY2ODEyXC8xZTI5NzQzMzcyOTE0YjE2MDkxNTI0N2NkZGMwY2E3NC0xNTkxNzE4OTIxLnN2ZyJ9:frontify:FUBxqK8yAh-cPqjcmhGA4pR442WpMZP8wrc1C9PJZn8?width=64', 
+    'Educación': 'https://cdn-assets-cloud.frontify.com/s3/frontify-cloud-files-us/eyJwYXRoIjoiZnJvbnRpZnlcL2FjY291bnRzXC84MVwvMTY2NjYzXC9wcm9qZWN0c1wvMjUxMDIzXC9hc3NldHNcLzJjXC80MzY0NjkwXC8xYTIwZTMxZTMzOTEwY2U3YTA4Yjg5ODVhOGU5Mjg0My0xNTkxNjkzNjA1LnN2ZyJ9:frontify:90NzWxvX_2V0BDPOGueYpIZfuSZvJfOer4Pkvq4dHBA?width=64',
+    'Protección General': 'https://cdn-assets-cloud.frontify.com/s3/frontify-cloud-files-us/eyJwYXRoIjoiZnJvbnRpZnlcL2FjY291bnRzXC84MVwvMTY2NjYzXC9wcm9qZWN0c1wvMjUxMDIzXC9hc3NldHNcL2EyXC80MzY1OTYwXC8zYjFiMDY2MTAzYjIyMWY0MTI4YTVkNzkxYmRjOTE3YS0xNTkxNzA4MzI2LnN2ZyJ9:frontify:7lTtjGE2P2Nbz_525sMoZikLkHSh9tegag19Prx_SZc?width=64',
+    'Protección Niños, Niñas, Adolescentes': 'https://cdn-assets-cloud.frontify.com/s3/frontify-cloud-files-us/eyJwYXRoIjoiZnJvbnRpZnlcL2FjY291bnRzXC84MVwvMTY2NjYzXC9wcm9qZWN0c1wvMjUxMDIzXC9hc3NldHNcL2EyXC80MzY1OTYwXC8zYjFiMDY2MTAzYjIyMWY0MTI4YTVkNzkxYmRjOTE3YS0xNTkxNzA4MzI2LnN2ZyJ9:frontify:7lTtjGE2P2Nbz_525sMoZikLkHSh9tegag19Prx_SZc?width=64',
+    'Protección Violencia de Género': 'https://cdn-assets-cloud.frontify.com/s3/frontify-cloud-files-us/eyJwYXRoIjoiZnJvbnRpZnlcL2FjY291bnRzXC84MVwvMTY2NjYzXC9wcm9qZWN0c1wvMjUxMDIzXC9hc3NldHNcL2EyXC80MzY1OTYwXC8zYjFiMDY2MTAzYjIyMWY0MTI4YTVkNzkxYmRjOTE3YS0xNTkxNzA4MzI2LnN2ZyJ9:frontify:7lTtjGE2P2Nbz_525sMoZikLkHSh9tegag19Prx_SZc?width=64',
+    'Salud': 'https://cdn-assets-cloud.frontify.com/s3/frontify-cloud-files-us/eyJwYXRoIjoiZnJvbnRpZnlcL2FjY291bnRzXC84MVwvMTY2NjYzXC9wcm9qZWN0c1wvMjUxMDIzXC9hc3NldHNcLzQwXC80MzY1MDA0XC9jNDk5OWE4ZDk2ZDE1YjZhNzIxMTQ5ZWU4YTFiMTkwMy0xNTkxNzAxMjUzLnN2ZyJ9:frontify:R0CU010gVeFON_MaMY38IILJz2LXMajqem4P1TiGwQk?width=64',
+    'Seguridad alimentaria': 'https://cdn-assets-cloud.frontify.com/s3/frontify-cloud-files-us/eyJwYXRoIjoiZnJvbnRpZnlcL2FjY291bnRzXC84MVwvMTY2NjYzXC9wcm9qZWN0c1wvMjUxMDIzXC9hc3NldHNcL2I0XC80MzY0Nzc1XC8xYjhhNmIxNzZlZTQ4MThjZjJjOGE5NDQyN2FjMjNjYi0xNTkxNjk0MjY5LnN2ZyJ9:frontify:tXhekXovZmafEC1xe1vMSYzRz4aiC23x9HTHlGsrz4U?width=64',
+    'Nutrición': 'https://cdn-assets-cloud.frontify.com/s3/frontify-cloud-files-us/eyJwYXRoIjoiZnJvbnRpZnlcL2FjY291bnRzXC84MVwvMTY2NjYzXC9wcm9qZWN0c1wvMjUxMDIzXC9hc3NldHNcLzQzXC80MzY1NzM1XC82ODU2MWExNDAzMzc0NzBjNDE5MGFmYWY5NTFkNzU4Yi0xNTkxNzA2NjI1LnN2ZyJ9:frontify:3rsyLJgQXbU3Y015aKrjd1ohrB4PI_KPd723_KhjCWA?width=64',
+    'Transversal': 'https://images4.imagebam.com/ef/ae/80/ME150QRY_o.jpg'
+};
+
+// --- FUNCIONES MAGIC LINKS CORREGIDAS ---
+
+// Función para generar token seguro pero más corto
+function generateSecureToken() {
+    if (window.crypto && window.crypto.getRandomValues) {
+        const array = new Uint8Array(32); // Mantenemos 32 bytes para seguridad
+        window.crypto.getRandomValues(array);
+        // Convertir a hex string
+        return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+    } else {
+        // Fallback para entornos más antiguos
+        console.warn("Usando generación de token de respaldo. Considere usar un contexto seguro (HTTPS).");
+        let token = '';
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        for (let i = 0; i < 64; i++) {
+            token += characters.charAt(Math.floor(Math.random() * characters.length));
+        }
+        return token;
+    }
+}
+
+// Función para guardar el token del magic link en Supabase
+async function saveMagicLinkToken(contactId, email, token) {
+    try {
+        const expiresAt = new Date();
+        expiresAt.setHours(expiresAt.getHours() + 2); // Token expira en 2 horas
+        
+        const { error } = await supabase
+            .from('magic_links')
+            .upsert({
+                contact_id: contactId,
+                email: email,
+                token: token,
+                expires_at: expiresAt.toISOString(),
+                used: false
+            });
+            
+        if (error) {
+            console.error('Error guardando token magic link:', error);
+            throw error;
+        }
+        console.log(`Token magic link guardado para ${email} (ID: ${contactId})`);
+    } catch (error) {
+        console.error('Error en saveMagicLinkToken:', error);
+        throw error;
+    }
+}
+
+// Configuración específica para GitHub Pages
+function getAppConfig() {
+    // CONFIGURACIÓN FIJA PARA TU REPOSITORIO GITHUB PAGES
+    const config = {
+        baseUrl: 'https://ochavenezuela.github.io/DirectorioSubOficinaOCHAMaracaibo',
+        isGithubPages: true,
         isDevelopment: false,
-        isGithubPages: false,
-        isProduction: false
+        isProduction: true
     };
     
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-        // Desarrollo local
-        config.baseUrl = `${protocol}//${hostname}${port ? ':' + port : ''}`;
-        config.isDevelopment = true;
-        console.log('🔧 Modo desarrollo detectado');
-    } else if (hostname.includes('github.io')) {
-        // GitHub Pages - usar la URL completa incluyendo el path del repositorio
-        config.baseUrl = 'https://ochavenezuela.github.io/DirectorioSubOficinaOCHAMaracaibo';
-        config.isGithubPages = true;
-        console.log('🚀 GitHub Pages detectado');
-    } else {
-        // Producción
-        config.baseUrl = window.location.origin;
-        config.isProduction = true;
-        console.log('🌐 Modo producción detectado');
-    }
-    
-    console.log('📍 Base URL configurada:', config.baseUrl);
+    console.log('🌐 Configuración GitHub Pages:', config.baseUrl);
     return config;
 }
 
-// Function to generate a real Supabase magic link
+// Función principal para generar magic link corregida
 async function generateRealMagicLink(email, contactId) {
     try {
         // Obtener configuración del entorno
         const appConfig = getAppConfig();
-        const redirectUrl = `${appConfig.baseUrl}/update-contact.html`;
+        // USAR LA URL BASE SIN EL DIRECTORIO PARA update-contact.html
+        const redirectUrl = `https://ochavenezuela.github.io/update-contact.html`;
         
         // Log para debugging
         console.log('🔗 Generando magic link:', {
@@ -1884,1528 +1864,1556 @@ async function generateRealMagicLink(email, contactId) {
         await saveMagicLinkToken(contactId, email, magicLinkToken);
         
         // Construir el enlace completo
-    		const magicLink = `${redirectUrl}?t=${magicLinkToken.substring(0, 16)}&i=${contactId}`;
+        const magicLink = `${redirectUrl}?token=${magicLinkToken}&id=${contactId}`;
         
         console.log("✅ Magic Link generado:", magicLink);
+        console.log("📏 Longitud del enlace:", magicLink.length);
         return magicLink;
 
     } catch (error) {
         console.error('❌ Error generando magic link:', error);
-        // URL de fallback
-        const appConfig = getAppConfig();
-        return `${appConfig.baseUrl}/update-contact.html?id=${contactId}&email=${encodeURIComponent(email)}`;
+        // URL de fallback simplificada
+        return `https://ochavenezuela.github.io/update-contact.html?id=${contactId}&email=${encodeURIComponent(email)}`;
     }
 }
-// --- END NEW FUNCTIONS ---
-            // --- END NEW FUNCTIONS ---
 
-            // Initialize Application
-            async function initializeApp() {
-                if (appInitialized && currentUser) return;
-                if (!currentUser) return;
-                
-                console.log("Initializing app data...");
-                
-                setupEventListenersApp();
-                setupFilters();
-                setupMultiSelectLists();
-                await loadContacts();
-                setupRealtimeSubscription();
-                
-                appInitialized = true;
+// --- FIN FUNCIONES MAGIC LINKS ---
+
+// Initialize Application
+async function initializeApp() {
+    if (appInitialized && currentUser) return;
+    if (!currentUser) return;
+    
+    console.log("Inicializando datos de la aplicación...");
+    
+    setupEventListenersApp();
+    setupFilters();
+    setupMultiSelectLists();
+    await loadContacts();
+    setupRealtimeSubscription();
+    
+    appInitialized = true;
+}
+
+function setupRealtimeSubscription() {
+    if (contactChangesChannel) {
+        try {
+            supabase.removeChannel(contactChangesChannel);
+        } catch(e) {
+            console.warn("Error eliminando canal anterior:", e);
+        }
+    }
+    
+    contactChangesChannel = supabase.channel('contacts-changes');
+    contactChangesChannel
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts' }, handleRealtimeUpdate)
+        .subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+                console.log('Suscrito al canal contacts-changes!');
+            } else if (status === 'CHANNEL_ERROR') {
+                console.error('Error de suscripción en el canal contacts-changes');
+            } else if (status === 'TIMED_OUT') {
+                console.warn('Tiempo de espera agotado en el canal contacts-changes');
             }
+        });
+}
 
-            function setupRealtimeSubscription() {
-                if (contactChangesChannel) {
-                    try {
-                        supabase.removeChannel(contactChangesChannel);
-                    } catch(e) {
-                        console.warn("Error removing old channel:", e);
-                    }
+function handleRealtimeUpdate(payload) {
+    console.log('Actualización en tiempo real:', payload);
+    let changed = false;
+    
+    if (payload.eventType === 'INSERT') {
+        const existing = contacts.find(c => c.id === payload.new.id);
+        if (!existing) {
+            contacts.push(payload.new);
+            changed = true;
+        }
+    } else if (payload.eventType === 'UPDATE') {
+        const index = contacts.findIndex(c => c.id === payload.new.id);
+        if (index > -1) {
+            contacts[index] = {...contacts[index], ...payload.new};
+            changed = true;
+        } else {
+            contacts.push(payload.new);
+            changed = true;
+        }
+    } else if (payload.eventType === 'DELETE') {
+        const oldLength = contacts.length;
+        contacts = contacts.filter(c => c.id !== payload.old.id);
+        if (contacts.length !== oldLength) changed = true;
+    }
+    
+    if (changed) {
+        applyFilters();
+    }
+}
+
+function setupFilters() {
+    // Filtro de sectores (Grilla de iconos en la barra lateral)
+    const sectorsGrid = document.getElementById('sectorsGrid');
+    sectorsGrid.innerHTML = '';
+    
+    sectoresList.forEach(sector => {
+        const div = document.createElement('div');
+        div.className = 'icon-item';
+        div.dataset.sector = sector;
+        div.onclick = () => toggleSectorFilter(sector);
+        
+        const iconUrl = sectorIcons[sector] || sectorIcons['Transversal'];
+        div.innerHTML = `
+            <img src="${iconUrl}" alt="${sector}" class="sector-icon" onerror="this.src='${sectorIcons['Transversal']}'; this.onerror=null;">
+            <div class="sector-name">${sector.split(' ').slice(0, 2).join(' ')}</div>
+        `;
+        sectorsGrid.appendChild(div);
+    });
+
+    // Filtro de espacios (Dropdown en la barra lateral)
+    const espacioFilter = document.getElementById('espacioFilter');
+    espacioFilter.innerHTML = '<option value="">Todos los espacios</option>';
+    espaciosList.forEach(espacio => {
+        const option = document.createElement('option');
+        option.value = espacio;
+        option.textContent = espacio;
+        espacioFilter.appendChild(option);
+    });
+
+    // Filtro de municipios (Dropdown en la barra lateral)
+    const municipiosFilter = document.getElementById('municipiosFilter');
+    municipiosFilter.innerHTML = '<option value="">Todos los municipios</option>';
+    municipiosList.forEach(municipio => {
+        const option = document.createElement('option');
+        option.value = municipio;
+        option.textContent = municipio;
+        municipiosFilter.appendChild(option);
+    });
+
+    municipiosFilter.addEventListener('change', handleMunicipiosFilter);
+}
+
+function setupMultiSelectLists() {
+    // Sectores para el formulario de contacto
+    const sectoresContainer = document.getElementById('sectoresMultiSelect');
+    sectoresContainer.innerHTML = '';
+    sectoresList.forEach(sector => {
+        const div = document.createElement('div');
+        div.className = 'multi-select-item';
+        div.innerHTML = `
+            <input type="checkbox" id="sector_${sector.replace(/[^a-zA-Z0-9]/g, '_')}" value="${sector}">
+            <label for="sector_${sector.replace(/[^a-zA-Z0-9]/g, '_')}">${sector}</label>
+        `;
+        sectoresContainer.appendChild(div);
+    });
+
+    // Municipios para el formulario de contacto
+    const municipiosContainer = document.getElementById('municipiosMultiSelect');
+    municipiosContainer.innerHTML = '';
+    municipiosList.forEach(municipio => {
+        const div = document.createElement('div');
+        div.className = 'multi-select-item';
+        div.innerHTML = `
+            <input type="checkbox" id="municipio_${municipio.replace(/[^a-zA-Z0-9]/g, '_')}" value="${municipio}">
+            <label for="municipio_${municipio.replace(/[^a-zA-Z0-9]/g, '_')}">${municipio}</label>
+        `;
+        municipiosContainer.appendChild(div);
+    });
+
+    // Espacios para el formulario de contacto (Multi-selección)
+    const espaciosContainer = document.getElementById('espaciosMultiSelect');
+    espaciosContainer.innerHTML = '';
+    espaciosList.forEach(espacio => {
+        const div = document.createElement('div');
+        div.className = 'multi-select-item';
+        div.innerHTML = `
+            <input type="checkbox" id="espacio_${espacio.replace(/[^a-zA-Z0-9]/g, '_')}" value="${espacio}">
+            <label for="espacio_${espacio.replace(/[^a-zA-Z0-9]/g, '_')}">${espacio}</label>
+        `;
+        espaciosContainer.appendChild(div);
+    });
+}
+
+function toggleSectorFilter(sector) {
+    const element = document.querySelector(`[data-sector="${sector}"]`);
+    
+    if (activeFilters.sectores.includes(sector)) {
+        activeFilters.sectores = activeFilters.sectores.filter(s => s !== sector);
+        element.classList.remove('active');
+    } else {
+        activeFilters.sectores.push(sector);
+        element.classList.add('active');
+    }
+    
+    applyFilters();
+}
+
+function handleMunicipiosFilter() {
+    const select = document.getElementById('municipiosFilter');
+    activeFilters.municipios = Array.from(select.selectedOptions).map(option => option.value).filter(Boolean);
+    applyFilters();
+}
+
+function setupAuthEventListeners() {
+    document.getElementById('loginForm').addEventListener('submit', handleLogin);
+    document.getElementById('registerForm').addEventListener('submit', handleRegister);
+    document.getElementById('passwordResetForm').addEventListener('submit', handlePasswordResetRequest);
+    
+    document.getElementById('showRegisterLink').addEventListener('click', (e) => { e.preventDefault(); showAuthForm('register'); });
+    document.getElementById('showPasswordResetLink').addEventListener('click', (e) => { e.preventDefault(); showAuthForm('reset'); });
+    document.getElementById('showLoginFromRegisterLink').addEventListener('click', (e) => { e.preventDefault(); showAuthForm('login'); });
+    document.getElementById('showLoginFromResetLink').addEventListener('click', (e) => { e.preventDefault(); showAuthForm('login'); });
+}
+
+function setupEventListenersApp() {
+    document.getElementById('searchInput').addEventListener('input', debounce(handleSearch, 300));
+    document.getElementById('contactForm').addEventListener('submit', handleContactSubmit);
+    document.getElementById('espacioFilter').addEventListener('change', handleEspacioFilter);
+}
+
+// Renderizar contactos con botones de acción mejorados
+function renderContacts() {
+    const tbody = document.getElementById('contactsTableBody');
+    tbody.innerHTML = '';
+    
+    if (filteredContacts.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No se encontraron contactos que coincidan con los filtros.</td></tr>';
+        return;
+    }
+    
+    filteredContacts.forEach(contact => {
+        const tr = document.createElement('tr');
+        
+        // Formatear teléfono para WhatsApp
+        const phoneForWhatsApp = formatPhoneForWhatsApp(contact.Teléfono);
+        const whatsappBtn = phoneForWhatsApp ? 
+            `<button class="action-btn action-btn-whatsapp" data-tooltip="WhatsApp" onclick="sendWhatsApp('${phoneForWhatsApp}')">
+                <i class="fab fa-whatsapp"></i>
+            </button>` : '';
+        
+        tr.innerHTML = `
+            <td><input type="checkbox" class="contact-checkbox" value="${contact.id}" onchange="toggleContactSelection('${contact.id}')"></td>
+            <td>${contact.organizacion || ''}</td>
+            <td>${contact.siglas || ''}</td>
+            <td>${contact.punto_focal || ''}</td>
+            <td>${contact.cargo || ''}</td>
+            <td>
+                ${contact.email || ''}
+                ${contact.email ? `<i class="fas fa-copy copy-icon" title="Copiar email" onclick="copyToClipboard('${contact.email}', this)"></i>` : ''}
+            </td>
+            <td>${contact.espacio_coordinacion || ''}</td>
+            <td>
+                <div class="action-buttons">
+                    <button class="action-btn action-btn-view" data-tooltip="Ver Detalles" onclick="viewContact('${contact.id}')">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="action-btn action-btn-edit" data-tooltip="Editar" onclick="editContact('${contact.id}')">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="action-btn action-btn-qr" data-tooltip="Código QR" onclick="showQRModal('${contact.id}')">
+                        <i class="fas fa-qrcode"></i>
+                    </button>
+                    ${whatsappBtn}
+                    <button class="action-btn action-btn-delete" data-tooltip="Eliminar" onclick="deleteContact('${contact.id}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </td>`;
+        tbody.appendChild(tr);
+    });
+}
+
+// Función WhatsApp para contacto individual
+function sendWhatsApp(phone) {
+    if (!phone) {
+        showAppMessage('Número de teléfono no disponible', 'warning');
+        return;
+    }
+    
+    const message = encodeURIComponent('Mensaje de OCHA Maracaibo:\n\n');
+    window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
+}
+
+async function importContactsFromFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    showAppMessage('Procesando archivo...', 'info', false);
+    try {
+        let jsonData;
+        
+        if (file.name.endsWith('.txt') || file.name.endsWith('.csv')) {
+            const text = await readFileAsText(file);
+            jsonData = parseCsvText(text);
+        } else if (file.name.endsWith('.xlsx')) {
+            const arrayBuffer = await readFileAsArrayBuffer(file);
+            jsonData = parseExcelFile(arrayBuffer);
+        } else {
+            throw new Error("Formato de archivo no soportado. Use .txt, .csv o .xlsx.");
+        }
+
+        if (!jsonData || jsonData.length === 0) {
+            showAppMessage('El archivo importado está vacío o no se pudo leer.', 'error');
+            return;
+        }
+        console.log("Datos parseados del archivo:", jsonData.slice(0, 3));
+        await processAndUpsertContacts(jsonData, 'archivo');
+        
+    } catch (error) {
+        console.error("Error en importContactsFromFile:", error);
+        showAppMessage('Error importando contactos desde archivo: ' + error.message, 'error');
+    } finally {
+        event.target.value = null;
+    }
+}
+
+function readFileAsText(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (event) => resolve(event.target.result);
+        reader.onerror = (error) => reject(error);
+        reader.readAsText(file, 'UTF-8');
+    });
+}
+
+function readFileAsArrayBuffer(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (event) => resolve(event.target.result);
+        reader.onerror = (error) => reject(error);
+        reader.readAsArrayBuffer(file);
+    });
+}
+
+function parseCsvText(csvText) {
+    const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== '');
+    if (lines.length < 2) return [];
+    
+    const headers = lines[0].split(';').map(h => h.replace(/"/g, '').trim());
+    const jsonData = [];
+
+    for (let i = 1; i < lines.length; i++) {
+        if (lines[i].toLowerCase().startsWith('total')) continue;
+
+        const values = lines[i].split(';');
+        const rowObject = {};
+        headers.forEach((header, index) => {
+            const value = values[index] ? values[index].trim() : "";
+            rowObject[header] = value;
+        });
+        jsonData.push(rowObject);
+    }
+    return jsonData;
+}
+
+function parseExcelFile(arrayBuffer) {
+    const data = new Uint8Array(arrayBuffer);
+    const workbook = XLSX.read(data, { type: 'array' });
+    const firstSheetName = workbook.SheetNames[0];
+    if (!firstSheetName) throw new Error("El archivo Excel no contiene hojas.");
+    const worksheet = workbook.Sheets[firstSheetName];
+    const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+    return jsonData;
+}
+
+async function processAndUpsertContacts(jsonData, sourceType) {
+    showAppMessage(`Procesando ${jsonData.length} contactos desde ${sourceType}...`, 'info', false);
+    
+    const contactsToUpsert = jsonData.map(processImportRow).filter(c => c.email);
+
+    if (contactsToUpsert.length === 0) {
+        showAppMessage('No se encontraron contactos válidos para importar (se requiere email).', 'error');
+        return;
+    }
+
+    const chunkSize = 50;
+    let importedCount = 0;
+    let errorsCount = 0;
+
+    for (let i = 0; i < contactsToUpsert.length; i += chunkSize) {
+        const chunk = contactsToUpsert.slice(i, i + chunkSize);
+        const { error } = await supabase.from('contacts').upsert(chunk, { onConflict: 'email' });
+
+        if (error) {
+            console.error("Error during upsert for chunk:", error);
+            errorsCount += chunk.length;
+        } else {
+            importedCount += chunk.length;
+        }
+        showAppMessage(`Procesando... ${i + chunk.length} de ${contactsToUpsert.length}`, 'info', false);
+    }
+    
+    let finalMessage = `${importedCount} contactos importados/actualizados.`;
+    if (errorsCount > 0) {
+        finalMessage += ` ${errorsCount} filas no pudieron ser procesadas.`;
+    }
+    showAppMessage(finalMessage, errorsCount === 0 ? 'success' : 'error');
+
+    await loadContacts();
+}
+
+function processImportRow(row) {
+    const get = (keys) => {
+        for (const key of keys) {
+            const foundKey = Object.keys(row).find(k => k.toLowerCase() === key.toLowerCase());
+            if (foundKey && row[foundKey] !== undefined && row[foundKey] !== null) {
+                return String(row[foundKey]).trim();
+            }
+        }
+        return '';
+    };
+    const getBool = (keys) => {
+        const val = get(keys).toLowerCase();
+        return val === 'sí' || val === 's' || val === 'si' || val === 'true' || val === '1' || val === 'yes';
+    };
+
+    return {
+        organizacion: get(['Organización']),
+        siglas: get(['Siglas']),
+        punto_focal: get(['Punto Focal', 'Nombre Punto Focal']),
+        cargo: get(['Cargo', 'Puesto']),
+        email: get(['Email', 'Correo Electrónico']),
+        Teléfono: get(['Teléfono', 'Tel']),
+        tipo_organizacion: get(['Tipo de Organización', 'Tipo Organización']),
+        reporta_345w: getBool(['Reporta en el 345W', '345W Report']),
+        socio_implementador: getBool(['Socio Implementador', 'Implementer Partner']),
+        organizacion_lider: getBool(['Organización Líder', 'Lead Org']),
+        participacion_flc: getBool(['Participación FLC', 'FLC Participation']),
+        espacio_coordinacion: get(['Espacio de Coordinación']),
+        sectores_concat: get(['Sectores', 'Sectors']),
+        municipios_concat: get(['Municipios', 'Municipalities'])
+    };
+}
+
+function exportExcel() {
+    const exportData = filteredContacts.map(contact => ({
+        'Organización': contact.organizacion,
+        'Siglas': contact.siglas,
+        'Punto Focal': contact.punto_focal,
+        'Cargo': contact.cargo,
+        'Email': contact.email,
+        'Teléfono': contact.Teléfono,
+        'Tipo de Organización': contact.tipo_organizacion,
+        'Reporta en el 345W': contact.reporta_345w ? 'Sí' : 'No',
+        'Socio Implementador': contact.socio_implementador ? 'Sí' : 'No',
+        'Organización Líder': contact.organizacion_lider ? 'Sí' : 'No',
+        'Participación FLC': contact.participacion_flc ? 'Sí' : 'No',
+        'Espacio de Coordinación': contact.espacio_coordinacion,
+        'Sectores': contact.sectores_concat,
+        'Municipios': contact.municipios_concat
+    }));
+    
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Contactos');
+    XLSX.writeFile(wb, `contactos_ocha_maracaibo_${new Date().toISOString().split('T')[0]}.xlsx`);
+    showAppMessage('Exportación Excel completada exitosamente', 'success');
+}
+
+function exportPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+    // Función de encabezado para todas las páginas
+    const addHeader = (pageNumber = 1) => {
+        doc.setFontSize(16);
+        doc.setTextColor(0, 114, 188); // OCHA Blue
+        doc.text('Sub Oficina OCHA Maracaibo', doc.internal.pageSize.width / 2, 15, { align: 'center' });
+        doc.setFontSize(12);
+        doc.setTextColor(0, 0, 0);
+        doc.text('Lista de Contactos Humanitarios', doc.internal.pageSize.width / 2, 25, { align: 'center' });
+    };
+
+    // Función de pie de página para todas las páginas
+    const addFooter = (pageNumber, totalPages) => {
+        const today = new Date().toLocaleDateString('es-ES');
+        doc.setFontSize(8);
+        doc.setTextColor(100);
+        doc.text(`Fecha: ${today}`, 20, doc.internal.pageSize.height - 10);
+        doc.text(`Página ${pageNumber} de ${totalPages}`, doc.internal.pageSize.width - 20, doc.internal.pageSize.height - 10, { align: 'right' });
+    };
+
+    // Preparar datos para la tabla
+    const tableData = filteredContacts.map(c => [
+        c.organizacion || '', 
+        c.siglas || '', 
+        c.punto_focal || '', 
+        c.cargo || '', 
+        c.email || '', 
+        c.Teléfono || '', 
+        c.tipo_organizacion || '',
+        c.espacio_coordinacion || ''
+    ]);
+
+    // Calcular páginas totales necesarias
+    const rowsPerPage = 15; // Filas aproximadas que caben por página
+    const totalPages = Math.ceil(tableData.length / rowsPerPage);
+
+    // Añadir contenido con paginación apropiada
+    doc.autoTable({
+        head: [['Organización', 'Siglas', 'Punto Focal', 'Cargo', 'Email', 'Teléfono', 'Tipo Org.', 'Espacio']],
+        body: tableData,
+        startY: 35,
+        margin: { top: 35, bottom: 20 },
+        headStyles: { 
+            fillColor: [0, 114, 188],
+            textColor: 255,
+            fontStyle: 'bold',
+            fontSize: 8
+        },
+        bodyStyles: { 
+            fontSize: 7,
+            cellPadding: 1.5,
+            valign: 'middle'
+        },
+        columnStyles: {
+            0: { cellWidth: 40 }, // Organización
+            1: { cellWidth: 35 }, // Siglas
+            2: { cellWidth: 30 }, // Punto Focal
+            3: { cellWidth: 30 }, // Cargo
+            4: { cellWidth: 45 }, // Email
+            5: { cellWidth: 30 }, // Teléfono
+            6: { cellWidth: 30 }, // Tipo Org
+            7: { cellWidth: 30 }  // Espacio
+        },
+        didDrawPage: (data) => {
+            addHeader();
+            addFooter(data.pageNumber, totalPages);
+        },
+        showHead: 'everyPage',
+        theme: 'striped'
+    });
+
+    doc.save(`contactos_ocha_maracaibo_${new Date().toISOString().split('T')[0]}.pdf`);
+    showAppMessage('Exportación PDF completada exitosamente', 'success');
+}
+
+// Funciones de selección
+function toggleSelectAll() {
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const contactCheckboxes = document.querySelectorAll('.contact-checkbox:not(#selectAll)');
+    
+    if (selectAllCheckbox.checked) {
+        contactCheckboxes.forEach(checkbox => {
+            checkbox.checked = true;
+            selectedContacts.add(checkbox.value);
+        });
+    } else {
+        contactCheckboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        selectedContacts.clear();
+    }
+    updateSelectionControls();
+}
+
+function toggleContactSelection(contactId) {
+    if (selectedContacts.has(contactId)) {
+        selectedContacts.delete(contactId);
+    } else {
+        selectedContacts.add(contactId);
+    }
+    
+    updateSelectAllCheckbox();
+    updateSelectionControls();
+}
+
+function updateSelectAllCheckbox() {
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const contactCheckboxes = document.querySelectorAll('.contact-checkbox:not(#selectAll)');
+    const checkedCheckboxes = document.querySelectorAll('.contact-checkbox:not(#selectAll):checked');
+    
+    if (checkedCheckboxes.length === 0) {
+        selectAllCheckbox.indeterminate = false;
+        selectAllCheckbox.checked = false;
+    } else if (checkedCheckboxes.length === contactCheckboxes.length) {
+        selectAllCheckbox.indeterminate = false;
+        selectAllCheckbox.checked = true;
+    } else {
+        selectAllCheckbox.indeterminate = true;
+    }
+}
+
+function updateSelectionControls() {
+    const selectionControls = document.getElementById('selectionControls');
+    const selectionInfo = document.getElementById('selectionInfo');
+    
+    if (selectedContacts.size > 0) {
+        selectionControls.classList.add('active');
+        selectionInfo.textContent = `${selectedContacts.size} contacto${selectedContacts.size > 1 ? 's' : ''} seleccionado${selectedContacts.size > 1 ? 's' : ''}`;
+    } else {
+        selectionControls.classList.remove('active');
+    }
+}
+
+function clearSelection() {
+    selectedContacts.clear();
+    document.querySelectorAll('.contact-checkbox').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    // Resetear estado del checkbox selectAll
+    const selectAllCheckbox = document.getElementById('selectAll');
+    selectAllCheckbox.indeterminate = false;
+    selectAllCheckbox.checked = false;
+    updateSelectionControls();
+}
+
+function createGroupFromSelection() {
+    if (selectedContacts.size === 0) {
+        showAppMessage('Seleccione al menos un contacto para crear un grupo', 'error');
+        return;
+    }
+    
+    // Establecer acción pendiente y solicitar contraseña de administrador
+    pendingAdminAction = 'createGroup'; 
+    document.getElementById('adminActionMessage').textContent = 'Por favor, ingresa la clave de administrador para crear grupos.';
+    document.getElementById('adminPasswordModal').classList.add('active');
+}
+
+function showGroupModal() {
+    const selectedContactsList = document.getElementById('selectedContactsList');
+    const selectedContactsArray = Array.from(selectedContacts).map(id => 
+        contacts.find(c => c.id === id)
+    ).filter(Boolean);
+    
+    selectedContactsList.innerHTML = `
+        <h5>Contactos seleccionados (${selectedContactsArray.length}):</h5>
+        <ul style="max-height: 150px; overflow-y: auto; margin: 0.5rem 0;">
+            ${selectedContactsArray.map(contact => 
+                `<li style="margin-bottom: 0.25rem;">${contact.organizacion} - ${contact.punto_focal} (${contact.email})</li>`
+            ).join('')}
+        </ul>
+    `;
+    
+    document.getElementById('groupModal').classList.add('active');
+}
+
+function saveGroup() {
+    const groupName = document.getElementById('groupName').value.trim();
+    const groupDescription = document.getElementById('groupDescription').value.trim();
+    
+    if (!groupName) {
+        const groupModalMessage = document.getElementById('groupModalMessage');
+        groupModalMessage.textContent = 'El nombre del grupo es obligatorio.';
+        groupModalMessage.className = 'status-message status-error';
+        groupModalMessage.style.display = 'block';
+        return;
+    }
+
+    // Simular guardado del grupo (en una implementación real, esto se guardaría en Supabase)
+    try {
+        // Aquí implementarías la lógica real de creación de grupos con Supabase
+        // Por ahora, solo mostramos un mensaje de éxito
+        
+        showAppMessage(`Grupo "${groupName}" creado exitosamente con ${selectedContacts.size} contactos.`, 'success');
+        
+        closeGroupModal();
+        clearSelection();
+        
+    } catch (error) {
+        const groupModalMessage = document.getElementById('groupModalMessage');
+        groupModalMessage.textContent = 'Error al crear el grupo: ' + error.message;
+        groupModalMessage.className = 'status-message status-error';
+        groupModalMessage.style.display = 'block';
+    }
+}
+
+function closeGroupModal() {
+    document.getElementById('groupModal').classList.remove('active');
+    document.getElementById('selectedContactsList').innerHTML = '';
+    document.getElementById('groupName').value = '';
+    document.getElementById('groupDescription').value = '';
+    const groupModalMessage = document.getElementById('groupModalMessage');
+    groupModalMessage.textContent = '';
+    groupModalMessage.className = 'status-message';
+    groupModalMessage.style.display = 'none';
+}
+
+function sendEmailToSelection() {
+    if (selectedContacts.size === 0) {
+        showAppMessage('Seleccione al menos un contacto para enviar correo', 'error');
+        return;
+    }
+    
+    const selectedContactsArray = Array.from(selectedContacts).map(id => 
+        contacts.find(c => c.id === id)
+    ).filter(Boolean);
+    
+    const emails = selectedContactsArray.map(contact => contact.email).filter(Boolean);
+    const emailList = emails.join(';');
+    
+    const subject = encodeURIComponent('Comunicación OCHA Maracaibo');
+    const body = encodeURIComponent('Estimados colegas,\n\n\n\nSaludos cordiales,\nSub Oficina OCHA Maracaibo');
+    
+    window.open(`mailto:${emailList}?subject=${subject}&body=${body}`);
+}
+
+function sendWhatsAppToSelection() {
+    if (selectedContacts.size === 0) {
+        showAppMessage('Seleccione al menos un contacto para enviar WhatsApp', 'error');
+        return;
+    }
+    
+    const selectedContactsArray = Array.from(selectedContacts).map(id => 
+        contacts.find(c => c.id === id)
+    ).filter(Boolean);
+    
+    const phones = selectedContactsArray
+        .map(contact => contact.Teléfono)
+        .filter(Boolean)
+        .map(formatPhoneForWhatsApp)
+        .filter(Boolean);
+    
+    if (phones.length === 0) {
+        showAppMessage('Los contactos seleccionados no tienen teléfonos registrados o el formato es incorrecto.', 'warning');
+        return;
+    }
+    
+    const message = encodeURIComponent('Mensaje de OCHA Maracaibo:\n\n');
+    phones.forEach(phone => {
+        window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
+    });
+}
+
+function formatPhoneForWhatsApp(phone) {
+    if (!phone) return null;
+    let cleaned = phone.replace(/\D/g, '');
+    // Asumiendo números venezolanos que empiezan con 04, que son 10 dígitos
+    // Necesitamos anteponer el código de país '58'
+    if (!cleaned.startsWith('58') && cleaned.length >= 10) {
+        // Tomar los últimos 10 dígitos y anteponer 58
+        cleaned = '58' + cleaned.substring(cleaned.length - 10); 
+    } else if (!cleaned.startsWith('58') && cleaned.length < 10) {
+        // Formato de número inválido para WhatsApp si es demasiado corto y no empieza con 58
+        return null; 
+    }
+    // WhatsApp requiere el prefijo '+', pero los enlaces wa.me lo manejan si se omite. Lo mantenemos limpio.
+    return cleaned; 
+}
+
+async function handleContactSubmit(e) {
+    e.preventDefault();
+    
+    const contactId = document.getElementById('contactId').value;
+    
+    // Recopilar sectores, municipios y espacios seleccionados
+    const selectedSectores = [];
+    document.querySelectorAll('#sectoresMultiSelect input[type="checkbox"]:checked').forEach(checkbox => {
+        selectedSectores.push(checkbox.value);
+    });
+    
+    const selectedMunicipios = [];
+    document.querySelectorAll('#municipiosMultiSelect input[type="checkbox"]:checked').forEach(checkbox => {
+        selectedMunicipios.push(checkbox.value);
+    });
+    
+    const selectedEspacios = [];
+    document.querySelectorAll('#espaciosMultiSelect input[type="checkbox"]:checked').forEach(checkbox => {
+        selectedEspacios.push(checkbox.value);
+    });
+    
+    // Construir objeto de datos del contacto
+    const contactData = {
+        organizacion: document.getElementById('organizacion').value.trim(),
+        siglas: document.getElementById('siglas').value.trim(),
+        punto_focal: document.getElementById('punto_focal').value.trim(),
+        cargo: document.getElementById('cargo').value.trim(),
+        email: document.getElementById('email').value.trim().toLowerCase(),
+        Teléfono: document.getElementById('Teléfono').value.trim(),
+        tipo_organizacion: document.getElementById('tipo_organizacion').value.trim(),
+        espacio_coordinacion: selectedEspacios.join(', '),
+        sectores_concat: selectedSectores.join(', '),
+        municipios_concat: selectedMunicipios.join(', '),
+        reporta_345w: document.getElementById('reporta_345w').checked,
+        socio_implementador: document.getElementById('socio_implementador').checked,
+        organizacion_lider: document.getElementById('organizacion_lider').checked,
+        participacion_flc: document.getElementById('participacion_flc').checked,
+    };
+    
+    try {
+        showAppMessage('Guardando contacto...', 'info', false);
+        
+        let query;
+        if (contactId) {
+            query = supabase.from('contacts').update(contactData).eq('id', contactId);
+        } else {
+            query = supabase.from('contacts').insert([contactData]);
+        }
+        const { error } = await query;
+        if (error) throw error;
+        
+        showAppMessage(contactId ? 'Contacto actualizado' : 'Contacto creado', 'success');
+        closeContactModal();
+        await loadContacts();
+        
+    } catch (error) {
+        console.error("Error guardando contacto:", error, contactData);
+        showAppMessage(`Error guardando contacto: ${error.message}`, 'error');
+    }
+}
+
+function viewContact(id) {
+    const contact = contacts.find(c => c.id.toString() === id);
+    if (!contact) {
+        console.error("Contacto no encontrado para ver:", id);
+        return;
+    }
+
+    const viewBody = document.getElementById('viewContactBody');
+    viewBody.innerHTML = `
+        <h4 style="color: var(--color-ochablue); margin-bottom: 1rem;">${contact.organizacion || 'N/A'} (${contact.siglas || 'N/A'})</h4>
+        <p><strong>Punto Focal:</strong> ${contact.punto_focal || 'N/A'}</p>
+        <p><strong>Cargo:</strong> ${contact.cargo || 'N/A'}</p>
+        <p><strong>Email:</strong> ${contact.email || 'N/A'}<i class="fas fa-copy copy-icon" title="Copiar email" onclick="copyToClipboard('${contact.email}', this)"></i></p>
+        <p><strong>Teléfono:</strong> ${contact.Teléfono || 'N/A'}</p>
+        <p><strong>Tipo de Organización:</strong> ${contact.tipo_organizacion || 'N/A'}</p>
+        <p><strong>Espacio de Coordinación:</strong> ${contact.espacio_coordinacion || 'N/A'}</p>
+        <hr>
+        <h5 style="color: var(--color-ochablue); margin-top: 1rem; margin-bottom: 0.5rem;">Sectores</h5>
+        <p>${contact.sectores_concat || 'No especificado'}</p>
+        <h5 style="color: var(--color-ochablue); margin-top: 1rem; margin-bottom: 0.5rem;">Municipios</h5>
+        <p>${contact.municipios_concat || 'No especificado'}</p>
+        <hr>
+        <h5 style="color: var(--color-ochablue); margin-top: 1rem; margin-bottom: 0.5rem;">Participación</h5>
+        <p><strong>Reporta en el 345W:</strong> ${contact.reporta_345w ? 'Sí' : 'No'}</p>
+        <p><strong>Socio Implementador:</strong> ${contact.socio_implementador ? 'Sí' : 'No'}</p>
+        <p><strong>Organización Líder:</strong> ${contact.organizacion_lider ? 'Sí' : 'No'}</p>
+        <p><strong>Participación FLC:</strong> ${contact.participacion_flc ? 'Sí' : 'No'}</p>
+    `;
+
+    document.getElementById('viewContactModal').classList.add('active');
+}
+
+function closeViewContactModal() {
+    document.getElementById('viewContactModal').classList.remove('active');
+}
+
+async function editContact(id) {
+    const contact = contacts.find(c => c.id.toString() === id);
+    if (!contact) {
+        console.error("Contacto no encontrado para editar:", id);
+        return;
+    }
+    
+    document.getElementById('modalTitle').textContent = 'Editar Contacto';
+    document.getElementById('contactId').value = id;
+    
+    // Llenar campos del formulario
+    document.getElementById('organizacion').value = contact.organizacion || '';
+    document.getElementById('siglas').value = contact.siglas || '';
+    document.getElementById('punto_focal').value = contact.punto_focal || '';
+    document.getElementById('cargo').value = contact.cargo || '';
+    document.getElementById('email').value = contact.email || '';
+    document.getElementById('Teléfono').value = contact.Teléfono || '';
+    document.getElementById('tipo_organizacion').value = contact.tipo_organizacion || '';
+    
+    // Establecer checkboxes
+    document.getElementById('reporta_345w').checked = contact.reporta_345w || false;
+    document.getElementById('socio_implementador').checked = contact.socio_implementador || false;
+    document.getElementById('organizacion_lider').checked = contact.organizacion_lider || false;
+    document.getElementById('participacion_flc').checked = contact.participacion_flc || false;
+    
+    // Establecer checkboxes de multi-selección para Sectores
+    const contactSectores = (contact.sectores_concat || '').split(',').map(s => s.trim());
+    document.querySelectorAll('#sectoresMultiSelect input[type="checkbox"]').forEach(checkbox => {
+        checkbox.checked = contactSectores.includes(checkbox.value);
+    });
+    
+    // Establecer checkboxes de multi-selección para Municipios
+    const contactMunicipios = (contact.municipios_concat || '').split(',').map(m => m.trim());
+    document.querySelectorAll('#municipiosMultiSelect input[type="checkbox"]').forEach(checkbox => {
+        checkbox.checked = contactMunicipios.includes(checkbox.value);
+    });
+    
+    // Establecer checkboxes de multi-selección para Espacios
+    const contactEspacios = (contact.espacio_coordinacion || '').split(',').map(e => e.trim());
+    document.querySelectorAll('#espaciosMultiSelect input[type="checkbox"]').forEach(checkbox => {
+        checkbox.checked = contactEspacios.includes(checkbox.value);
+    });
+    
+    document.getElementById('contactModal').classList.add('active');
+}
+
+async function deleteContact(id) {
+    pendingDeleteId = id;
+    const contact = contacts.find(c => c.id === id);
+    
+    pendingAdminAction = 'delete'; 
+    document.getElementById('adminActionMessage').textContent = 'Por favor, ingresa la clave de administrador para eliminar este contacto.';
+    document.getElementById('adminPasswordModal').classList.add('active');
+}
+
+function confirmAdminAction() {
+    const passwordInput = document.getElementById('adminPassword');
+    const adminPasswordError = document.getElementById('adminPasswordError');
+    const enteredPassword = passwordInput.value;
+
+    if (enteredPassword === ADMIN_PASSWORD) {
+        adminPasswordError.textContent = '';
+        adminPasswordError.style.display = 'none';
+        passwordInput.value = '';
+        document.getElementById('adminPasswordModal').classList.remove('active');
+
+        // Ejecutar la acción pendiente
+        if (pendingAdminAction === 'delete' && pendingDeleteId) {
+            performDelete(pendingDeleteId);
+            pendingDeleteId = null;
+        } else if (pendingAdminAction === 'createGroup') {
+            showGroupModal();
+        }
+        
+        pendingAdminAction = null;
+    } else {
+        adminPasswordError.textContent = 'Clave de administrador incorrecta.';
+        adminPasswordError.style.display = 'block';
+    }
+}
+
+function closeAdminPasswordModal() {
+    document.getElementById('adminPasswordModal').classList.remove('active');
+    document.getElementById('adminPassword').value = '';
+    const adminPasswordError = document.getElementById('adminPasswordError');
+    adminPasswordError.textContent = '';
+    adminPasswordError.style.display = 'none';
+    pendingDeleteId = null;
+    pendingAdminAction = null;
+}
+
+async function performDelete(id) {
+    try {
+        showAppMessage('Eliminando contacto...', 'info', false);
+        const { error } = await supabase.from('contacts').delete().eq('id', id);
+        if (error) throw error;
+        showAppMessage('Contacto eliminado exitosamente', 'success');
+        await loadContacts();
+    } catch (error) {
+        showAppMessage('Error eliminando contacto: ' + error.message, 'error');
+    }
+}
+
+function showAddContactModal() {
+    document.getElementById('modalTitle').textContent = 'Nuevo Contacto';
+    document.getElementById('contactForm').reset();
+    document.getElementById('contactId').value = '';
+    document.getElementById('tipo_organizacion').selectedIndex = 0;
+    
+    // Limpiar todos los checkboxes de multi-selección
+    document.querySelectorAll('#sectoresMultiSelect input[type="checkbox"]').forEach(checkbox => checkbox.checked = false);
+    document.querySelectorAll('#municipiosMultiSelect input[type="checkbox"]').forEach(checkbox => checkbox.checked = false);
+    document.querySelectorAll('#espaciosMultiSelect input[type="checkbox"]').forEach(checkbox => checkbox.checked = false);
+    
+    document.getElementById('contactModal').classList.add('active');
+}
+
+function closeContactModal() {
+    document.getElementById('contactModal').classList.remove('active');
+}
+
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => { clearTimeout(timeout); func(...args); };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+function showAppMessage(message, type, autoHide = true) {
+    const messageEl = document.getElementById('appStatusMessage');
+    messageEl.textContent = message;
+    messageEl.className = `status-message status-${type}`;
+    messageEl.style.display = 'block';
+    
+    if (autoHide) {
+        setTimeout(() => {
+            if (messageEl.textContent === message) { 
+                messageEl.style.display = 'none';
+            }
+        }, 5000);
+    }
+}
+
+function hideAuthMessages() {
+    ['loginError', 'loginSuccess', 'registerError', 'registerSuccess', 'resetError', 'resetSuccess'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.textContent = '';
+            el.style.display = 'none';
+        }
+    });
+}
+
+function showError(elementId, message) {
+    const errorEl = document.getElementById(elementId);
+    if (!errorEl) return;
+    
+    const successId = elementId.replace("Error", "Success");
+    const successEl = document.getElementById(successId);
+    if (successEl) {
+        successEl.textContent = '';
+        successEl.style.display = 'none';
+    }
+    
+    errorEl.textContent = message;
+    errorEl.style.display = 'block';
+}
+
+function showSuccess(elementId, message) {
+    const successEl = document.getElementById(elementId);
+    if (!successEl) return;
+    
+    const errorId = elementId.replace("Success", "Error");
+    const errorEl = document.getElementById(errorId);
+    if (errorEl) {
+        errorEl.textContent = '';
+        errorEl.style.display = 'none';
+    }
+    
+    successEl.textContent = message;
+    successEl.style.display = 'block';
+    
+    setTimeout(() => {
+        if (successEl.textContent === message) {
+            successEl.textContent = '';
+            successEl.style.display = 'none';
+        }
+    }, 5000);
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    setupAuthEventListeners();
+    // Verificar estado de autenticación inicial al cargar la página
+    const { data: session } = supabase.auth.getSession();
+    if (session && session.user) {
+        currentUser = session.user;
+        showMainApp();
+    } else {
+        showLoginPage();
+    }
+});
+
+supabase.auth.onAuthStateChange(async (event, session) => {
+    console.log('Evento de autenticación:', event, session);
+    const previousUser = currentUser;
+    
+    if (event === "PASSWORD_RECOVERY") {
+        console.log("Recuperación de contraseña iniciada.");
+        showSuccess('loginSuccess', 'Se ha iniciado el proceso de recuperación de contraseña.');
+    }
+    
+    if (session && session.user) {
+        currentUser = session.user;
+        // Solo mostrar la aplicación principal si está oculta actualmente o si el usuario ha cambiado
+        if (document.getElementById('mainApp').style.display === 'none' || (previousUser && previousUser.id !== currentUser.id)) {
+            appInitialized = false; // Reiniciar estado de la aplicación si el usuario cambia
+            showMainApp();
+        } else if (document.getElementById('mainApp').style.display === 'block' && !appInitialized) {
+            // Si la aplicación está visible pero no inicializada (ej. después de recargar página pero la sesión persistió)
+            await initializeApp();
+        }
+        document.getElementById('userEmail').textContent = currentUser.email;
+    } else {
+        currentUser = null;
+        if (appInitialized) {
+            // Limpiar canal de Supabase si el usuario cierra sesión
+            if (contactChangesChannel) {
+                try {
+                    await supabase.removeChannel(contactChangesChannel);
+                } catch(e) {
+                    console.warn("Error eliminando canal anterior:", e);
                 }
-                
-                contactChangesChannel = supabase.channel('contacts-changes');
-                contactChangesChannel
-                    .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts' }, handleRealtimeUpdate)
-                    .subscribe((status) => {
-                        if (status === 'SUBSCRIBED') {
-                            console.log('Subscribed to contacts-changes channel!');
-                        } else if (status === 'CHANNEL_ERROR') {
-                            console.error('Subscription error on contacts-changes channel');
-                        } else if (status === 'TIMED_OUT') {
-                            console.warn('Subscription timeout on contacts-changes channel');
-                        }
-                    });
             }
+        }
+        appInitialized = false; // Marcar aplicación como no inicializada
+        showLoginPage();
+    }
+});
 
-            function handleRealtimeUpdate(payload) {
-                console.log('Realtime update:', payload);
-                let changed = false;
-                
-                if (payload.eventType === 'INSERT') {
-                    const existing = contacts.find(c => c.id === payload.new.id);
-                    if (!existing) {
-                        contacts.push(payload.new);
-                        changed = true;
-                    }
-                } else if (payload.eventType === 'UPDATE') {
-                    const index = contacts.findIndex(c => c.id === payload.new.id);
-                    if (index > -1) {
-                        contacts[index] = {...contacts[index], ...payload.new};
-                        changed = true;
-                    } else {
-                        contacts.push(payload.new);
-                        changed = true;
-                    }
-                } else if (payload.eventType === 'DELETE') {
-                    const oldLength = contacts.length;
-                    contacts = contacts.filter(c => c.id !== payload.old.id);
-                    if (contacts.length !== oldLength) changed = true;
+function showAuthForm(formToShow) {
+    hideAuthMessages();
+    document.getElementById('loginForm').style.display = formToShow === 'login' ? 'block' : 'none';
+    document.getElementById('registerForm').style.display = formToShow === 'register' ? 'block' : 'none';
+    document.getElementById('passwordResetForm').style.display = formToShow === 'reset' ? 'block' : 'none';
+
+    document.getElementById('linkToRegister').style.display = formToShow === 'login' ? 'block' : 'none';
+    document.getElementById('linkToPasswordReset').style.display = formToShow === 'login' ? 'block' : 'none';
+    
+    document.getElementById('linkToLoginFromRegister').style.display = formToShow === 'register' ? 'block' : 'none';
+    document.getElementById('linkToLoginFromReset').style.display = formToShow === 'reset' ? 'block' : 'none';
+}
+
+async function handleLogin(e) {
+    e.preventDefault();
+    hideAuthMessages();
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+    
+    try {
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        showSuccess('loginSuccess', 'Ingreso exitoso. Redirigiendo...');
+        // El listener onAuthStateChange manejará la redirección
+    } catch (error) {
+        let errorMessage = error.message;
+        if (errorMessage.includes("Failed to fetch")) {
+            errorMessage = "Error de red o CORS. Verifique su conexión a internet.";
+        } else if (errorMessage.includes("Invalid login credentials")) {
+            errorMessage = "Credenciales inválidas. Por favor, revise su correo y contraseña.";
+        } else if (errorMessage.includes("Email not confirmed")) {
+            errorMessage = "Su correo electrónico no ha sido confirmado. Revise su bandeja de entrada para el enlace de confirmación.";
+        }
+        showError('loginError', `Error al ingresar: ${errorMessage}`);
+    }
+}
+
+async function handleRegister(e) {
+    e.preventDefault();
+    hideAuthMessages();
+    const email = document.getElementById('registerEmail').value;
+    const password = document.getElementById('registerPassword').value;
+    
+    try {
+        const { data, error } = await supabase.auth.signUp({ email, password });
+        if (error) throw error;
+        
+        // Verificar si el usuario fue creado pero el email no confirmado
+        if (data.user && data.user.identities && data.user.identities.length === 0) {
+            showError('registerError', 'Este correo ya está registrado y requiere confirmación.');
+        } else if (data.user && (data.user.email_confirmed_at === null && data.session === null)) {
+            // Usuario registrado pero necesita confirmación por email
+            showSuccess('registerSuccess', '¡Registro exitoso! Revisa tu correo para confirmar tu cuenta.');
+        } else {
+            // Registro exitoso y posiblemente auto-confirmado (dependiendo de la configuración de Supabase)
+            showSuccess('registerSuccess', '¡Registro exitoso! Ahora puedes ingresar.');
+            showAuthForm('login'); // Redirigir al formulario de login
+        }
+    } catch (error) {
+        let errorMessage = error.message;
+        if (errorMessage.includes("duplicate key value violates unique constraint")) {
+            errorMessage = "Este correo electrónico ya está en uso.";
+        }
+        showError('registerError', `Error en el registro: ${errorMessage}`);
+    }
+}
+
+async function handlePasswordResetRequest(e) {
+    e.preventDefault();
+    hideAuthMessages();
+    const email = document.getElementById('resetEmail').value;
+    
+    try {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            // Esta URL debe estar configurada en las configuraciones de Supabase Auth para reseteo de contraseña
+            redirectTo: window.location.origin + '/update-password.html' // Ruta de ejemplo
+        });
+        if (error) throw error;
+        showSuccess('resetSuccess', 'Si existe una cuenta asociada a este correo, se ha enviado un enlace para restablecer la contraseña.');
+    } catch (error) {
+        let errorMessage = error.message;
+         if (errorMessage.includes("User not found")) {
+            errorMessage = "No se encontró ningún usuario con este correo electrónico.";
+        }
+        showError('resetError', 'Error al solicitar reseteo: ' + errorMessage);
+    }
+}
+
+async function handleLogout() {
+    showAppMessage("Cerrando sesión...", "info", false);
+    try {
+        await supabase.auth.signOut();
+        // El listener onAuthStateChange manejará mostrar la página de login
+    } catch (error) {
+        console.error("Error durante el logout:", error);
+        showAppMessage("Error al cerrar sesión. Inténtalo de nuevo.", "error");
+    }
+}
+
+function showMainApp() {
+    console.log('Mostrando aplicación principal para usuario:', currentUser?.email);
+    document.getElementById('loginPage').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'block';
+    if (currentUser) {
+        document.getElementById('userEmail').textContent = currentUser.email;
+    }
+    // Inicializar datos de la aplicación si no se ha hecho ya
+    if (!appInitialized) {
+        initializeApp();
+    }
+}
+
+function showLoginPage() {
+    console.log('Mostrando página de login');
+    document.getElementById('loginPage').style.display = 'flex';
+    document.getElementById('mainApp').style.display = 'none';
+    showAuthForm('login'); // Asegurar que el formulario de login sea visible por defecto
+}
+
+async function loadContacts() {
+    try {
+        showAppMessage('Cargando contactos...', 'info', false);
+        const { data, error } = await supabase
+            .from('contacts')
+            .select('*')
+            .order('organizacion', { ascending: true });
+            
+        if (error) throw error;
+        
+        contacts = data || [];
+        setupEspacioFilter(); // Actualizar opciones de filtro basadas en datos cargados
+        applyFilters(); // Aplicar filtros actuales a los contactos cargados
+        showAppMessage(`Cargados ${contacts.length} contactos.`, 'success');
+    } catch (error) {
+        console.error('Error cargando contactos:', error);
+        showAppMessage('Error cargando contactos: ' + error.message, 'error');
+    }
+}
+
+function setupEspacioFilter() {
+    const espacioFilter = document.getElementById('espacioFilter');
+    // Usar datos de contactos cargados para poblar filtro, fallback a lista predefinida si no hay contactos aún
+    const availableSpaces = contacts.length > 0 
+        ? [...new Set(contacts.map(c => c.espacio_coordinacion).filter(Boolean))].sort()
+        : espaciosList; 
+    
+    espacioFilter.innerHTML = '<option value="">Todos los espacios</option>'; // Reiniciar y añadir opción por defecto
+    availableSpaces.forEach(espacio => {
+        const option = document.createElement('option');
+        option.value = espacio;
+        option.textContent = espacio;
+        espacioFilter.appendChild(option);
+    });
+}
+
+function handleSearch() {
+    activeFilters.search = document.getElementById('searchInput').value.toLowerCase();
+    applyFilters();
+}
+
+function handleEspacioFilter() {
+    activeFilters.espacio = document.getElementById('espacioFilter').value;
+    applyFilters();
+}
+
+function applyFilters() {
+    filteredContacts = contacts.filter(contact => {
+        // Filtro de búsqueda: Verificar en múltiples campos
+        if (activeFilters.search) {
+            const searchStr = activeFilters.search;
+            const searchFields = [
+                contact.organizacion,
+                contact.siglas,
+                contact.punto_focal,
+                contact.cargo,
+                contact.email,
+                contact.Teléfono,
+                contact.tipo_organizacion,
+                contact.espacio_coordinacion,
+                contact.sectores_concat,
+                contact.municipios_concat
+            ].filter(Boolean).join(' ').toLowerCase();
+            if (!searchFields.includes(searchStr)) return false;
+        }
+        
+        // Filtro de espacio (selección única desde la barra lateral)
+        if (activeFilters.espacio && contact.espacio_coordinacion !== activeFilters.espacio) return false;
+        
+        // Filtro de sectores (múltiples seleccionados en la barra lateral)
+        if (activeFilters.sectores.length > 0) {
+            const contactSectores = (contact.sectores_concat || '').toLowerCase();
+            const hasMatchingSector = activeFilters.sectores.some(sector => 
+                contactSectores.includes(sector.toLowerCase())
+            );
+            if (!hasMatchingSector) return false;
+        }
+        
+        // Filtro de municipios (múltiples seleccionados en la barra lateral)
+        if (activeFilters.municipios.length > 0) {
+            const contactMunicipios = (contact.municipios_concat || '').toLowerCase();
+            const hasMatchingMunicipio = activeFilters.municipios.some(municipio => 
+                contactMunicipios.includes(municipio.toLowerCase())
+            );
+            if (!hasMatchingMunicipio) return false;
+        }
+        
+        return true;
+    });
+    
+    // Aplicar ordenamiento basado en sortField y sortDirection actuales
+    filteredContacts.sort((a, b) => {
+        let valA = a[sortField];
+        let valB = b[sortField];
+
+        // Asegurar que los valores sean strings para comparación consistente, manejar null/undefined
+        if (valA === null || valA === undefined) valA = '';
+        if (valB === null || valB === undefined) valB = '';
+
+        if (typeof valA === 'string') valA = valA.toLowerCase();
+        if (typeof valB === 'string') valB = valB.toLowerCase();
+
+        if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+        if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+        return 0;
+    });
+
+    renderContacts();
+    updateKPIs();
+    clearSelection(); // Limpiar selección cuando los filtros cambien
+}
+
+function resetFilters() {
+    activeFilters = { search: '', espacio: '', sectores: [], municipios: [] };
+    document.getElementById('searchInput').value = '';
+    document.getElementById('espacioFilter').value = '';
+    document.getElementById('municipiosFilter').value = ''; // Reiniciar multiselect al valor por defecto
+    document.querySelectorAll('.icon-item.active').forEach(item => item.classList.remove('active'));
+    applyFilters();
+}
+
+function updateKPIs() {
+    const kpiGrid = document.getElementById('kpiGrid');
+    kpiGrid.innerHTML = '';
+    
+    const orgs = new Set(filteredContacts.map(c => c.organizacion).filter(Boolean));
+    const uniqueEspacios = new Set(filteredContacts.map(c => c.espacio_coordinacion).filter(Boolean));
+    const uniqueSectores = new Set();
+    filteredContacts.forEach(c => {
+        if (c.sectores_concat) {
+            c.sectores_concat.split(',').forEach(s => uniqueSectores.add(s.trim()));
+        }
+    });
+
+    createKPICard(kpiGrid, { icon: 'fa-users', value: filteredContacts.length, label: 'Total Contactos' });
+    createKPICard(kpiGrid, { icon: 'fa-building', value: orgs.size, label: 'Organizaciones' });
+    createKPICard(kpiGrid, { icon: 'fa-map-marker-alt', value: uniqueEspacios.size, label: 'Espacios Coord.' });
+    createKPICard(kpiGrid, { icon: 'fa-th-list', value: uniqueSectores.size, label: 'Sectores Activos' });
+}
+
+function createKPICard(container, data) {
+    const div = document.createElement('div');
+    div.className = 'kpi-card';
+    div.innerHTML = `
+        <i class="fas ${data.icon} kpi-icon"></i>
+        <div class="kpi-value">${data.value}</div>
+        <div class="kpi-label">${data.label}</div>
+    `;
+    container.appendChild(div);
+}
+
+function copyToClipboard(text, element) {
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => {
+        const originalIconClass = element.className;
+        const originalColor = element.style.color;
+        element.className = 'fas fa-check-circle';
+        element.style.color = 'var(--ocha-green)';
+        
+        setTimeout(() => {
+            element.className = originalIconClass;
+            element.style.color = originalColor;
+        }, 1500);
+    }).catch(err => {
+        console.error('Error copying to clipboard: ', err);
+        showAppMessage('Error al copiar el correo', 'error');
+    });
+}
+
+function sortTable(field) {
+    if (sortField === field) {
+        sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+        sortField = field;
+        sortDirection = 'asc';
+    }
+    
+    // Actualizar iconos de ordenamiento
+    document.querySelectorAll('.sort-icon').forEach(icon => {
+        icon.className = 'fas fa-sort sort-icon';
+    });
+    
+    const currentHeader = document.querySelector(`th[onclick="sortTable('${field}')"] .sort-icon`);
+    if (currentHeader) {
+        currentHeader.className = `fas fa-sort-${sortDirection === 'asc' ? 'up' : 'down'} sort-icon`;
+    }
+    
+    applyFilters(); // Re-renderizar con datos ordenados
+}
+
+// --- Funciones específicas de Magic Link ---
+
+// Placeholder para generateMagicLink si quieres usarlo también para enlaces basados en email
+async function generateMagicLink() {
+    const email = document.getElementById('loginEmail').value.trim();
+    
+    if (!email) {
+        showError('loginError', 'Por favor, ingrese su correo electrónico para generar el enlace.');
+        return;
+    }
+
+    try {
+        // Para enlaces de email, idealmente usaríamos el envío de emails integrado de Supabase.
+        // Este ejemplo se enfoca en la generación de QR, pero esta función llamaría a
+        // generateRealMagicLink y luego *también* activaría el envío de email de Supabase si fuera necesario.
+        
+        // Ejemplo: Obtener el ID del contacto para el email si existe
+        const { data: contact, error: contactError } = await supabase
+            .from('contacts')
+            .select('id')
+            .eq('email', email)
+            .single();
+        
+        let contactId = contact ? contact.id : null;
+
+        const magicLink = await generateRealMagicLink(email, contactId);
+
+        // Si también quisiéramos ENVIAR un email vía Supabase (requiere configuración de email)
+        /*
+        const { error: supabaseSendError } = await supabase.auth.signInWithOtp({
+            email: email,
+            options: {
+                emailRedirectTo: magicLink, // Aquí es donde Supabase redirige *después* de que hagan clic en el enlace que envía
+                shouldCreateUser: false
+            }
+        });
+        if (supabaseSendError) throw supabaseSendError;
+        */
+       
+        // Para QR, solo necesitamos el enlace. Para email, probablemente necesitarías el envío de Supabase.
+        // Este botón podría ser mejor servido por la lógica de `generateRealMagicLink` directamente.
+        showSuccess('loginSuccess', 'Se ha generado un enlace de actualización. Si el email está asociado a un contacto, revisa tu bandeja para el enlace.');
+        
+    } catch (error) {
+        console.error('Error generando magic link para email:', error);
+        showError('loginError', 'Error generando enlace: ' + error.message);
+    }
+}
+
+// Función showQRModal modificada (versión corregida)
+async function showQRModal(contactId) {
+    const contact = contacts.find(c => c.id.toString() === contactId);
+    if (!contact) {
+        showAppMessage('Contacto no encontrado', 'error');
+        return;
+    }
+
+    const waitForQRCode = (callback) => {
+        if (typeof QRCode !== 'undefined') {
+            callback();
+        } else {
+            let attempts = 0;
+            const interval = setInterval(() => {
+                attempts++;
+                if (typeof QRCode !== 'undefined') {
+                    clearInterval(interval);
+                    callback();
+                } else if (attempts > 20) {
+                    clearInterval(interval);
+                    console.error('La librería QRCode falló al cargar a tiempo.');
+                    showAppMessage('Error: La librería para generar códigos QR no se ha cargado. Revise su conexión a internet y recargue la página.', 'error');
                 }
-                
-                if (changed) {
-                    applyFilters();
-                }
-            }
+            }, 250);
+        }
+    };
 
-            function setupFilters() {
-                // Sectors Filter (Icon Grid in Sidebar)
-                const sectorsGrid = document.getElementById('sectorsGrid');
-                sectorsGrid.innerHTML = '';
-                
-                sectoresList.forEach(sector => {
-                    const div = document.createElement('div');
-                    div.className = 'icon-item';
-                    div.dataset.sector = sector;
-                    div.onclick = () => toggleSectorFilter(sector);
-                    
-                    const iconUrl = sectorIcons[sector] || sectorIcons['Transversal'];
-                    div.innerHTML = `
-                        <img src="${iconUrl}" alt="${sector}" class="sector-icon" onerror="this.src='${sectorIcons['Transversal']}'; this.onerror=null;">
-                        <div class="sector-name">${sector.split(' ').slice(0, 2).join(' ')}</div>
-                    `;
-                    sectorsGrid.appendChild(div);
-                });
-
-                // Espacios Filter (Dropdown in Sidebar)
-                const espacioFilter = document.getElementById('espacioFilter');
-                espacioFilter.innerHTML = '<option value="">Todos los espacios</option>';
-                espaciosList.forEach(espacio => {
-                    const option = document.createElement('option');
-                    option.value = espacio;
-                    option.textContent = espacio;
-                    espacioFilter.appendChild(option);
-                });
-
-                // Municipios Filter (Dropdown in Sidebar)
-                const municipiosFilter = document.getElementById('municipiosFilter');
-                municipiosFilter.innerHTML = '<option value="">Todos los municipios</option>';
-                municipiosList.forEach(municipio => {
-                    const option = document.createElement('option');
-                    option.value = municipio;
-                    option.textContent = municipio;
-                    municipiosFilter.appendChild(option);
-                });
-
-                municipiosFilter.addEventListener('change', handleMunicipiosFilter);
-            }
-
-            function setupMultiSelectLists() {
-                // Sectors for Contact Form
-                const sectoresContainer = document.getElementById('sectoresMultiSelect');
-                sectoresContainer.innerHTML = '';
-                sectoresList.forEach(sector => {
-                    const div = document.createElement('div');
-                    div.className = 'multi-select-item';
-                    div.innerHTML = `
-                        <input type="checkbox" id="sector_${sector.replace(/[^a-zA-Z0-9]/g, '_')}" value="${sector}">
-                        <label for="sector_${sector.replace(/[^a-zA-Z0-9]/g, '_')}">${sector}</label>
-                    `;
-                    sectoresContainer.appendChild(div);
-                });
-
-                // Municipios for Contact Form
-                const municipiosContainer = document.getElementById('municipiosMultiSelect');
-                municipiosContainer.innerHTML = '';
-                municipiosList.forEach(municipio => {
-                    const div = document.createElement('div');
-                    div.className = 'multi-select-item';
-                    div.innerHTML = `
-                        <input type="checkbox" id="municipio_${municipio.replace(/[^a-zA-Z0-9]/g, '_')}" value="${municipio}">
-                        <label for="municipio_${municipio.replace(/[^a-zA-Z0-9]/g, '_')}">${municipio}</label>
-                    `;
-                    municipiosContainer.appendChild(div);
-                });
-
-                // Espacios for Contact Form (Multi-select)
-                const espaciosContainer = document.getElementById('espaciosMultiSelect');
-                espaciosContainer.innerHTML = '';
-                espaciosList.forEach(espacio => {
-                    const div = document.createElement('div');
-                    div.className = 'multi-select-item';
-                    div.innerHTML = `
-                        <input type="checkbox" id="espacio_${espacio.replace(/[^a-zA-Z0-9]/g, '_')}" value="${espacio}">
-                        <label for="espacio_${espacio.replace(/[^a-zA-Z0-9]/g, '_')}">${espacio}</label>
-                    `;
-                    espaciosContainer.appendChild(div);
-                });
-            }
-
-            function toggleSectorFilter(sector) {
-                const element = document.querySelector(`[data-sector="${sector}"]`);
-                
-                if (activeFilters.sectores.includes(sector)) {
-                    activeFilters.sectores = activeFilters.sectores.filter(s => s !== sector);
-                    element.classList.remove('active');
-                } else {
-                    activeFilters.sectores.push(sector);
-                    element.classList.add('active');
-                }
-                
-                applyFilters();
-            }
-
-            function handleMunicipiosFilter() {
-                const select = document.getElementById('municipiosFilter');
-                activeFilters.municipios = Array.from(select.selectedOptions).map(option => option.value).filter(Boolean);
-                applyFilters();
-            }
-
-            function setupAuthEventListeners() {
-                document.getElementById('loginForm').addEventListener('submit', handleLogin);
-                document.getElementById('registerForm').addEventListener('submit', handleRegister);
-                document.getElementById('passwordResetForm').addEventListener('submit', handlePasswordResetRequest);
-                
-                document.getElementById('showRegisterLink').addEventListener('click', (e) => { e.preventDefault(); showAuthForm('register'); });
-                document.getElementById('showPasswordResetLink').addEventListener('click', (e) => { e.preventDefault(); showAuthForm('reset'); });
-                document.getElementById('showLoginFromRegisterLink').addEventListener('click', (e) => { e.preventDefault(); showAuthForm('login'); });
-                document.getElementById('showLoginFromResetLink').addEventListener('click', (e) => { e.preventDefault(); showAuthForm('login'); });
+    waitForQRCode(async () => { // Hacer el callback async
+        try {
+            currentQRContactId = contactId;
+            document.getElementById('qrContactName').textContent = `${contact.organizacion} - ${contact.punto_focal}`;
+            
+            // Mostrar mensaje de carga
+            const qrContainer = document.getElementById('qrcode');
+            qrContainer.innerHTML = '<div style="text-align: center; padding: 2rem;"><i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: var(--color-ochablue);"></i><br><p style="margin-top: 1rem;">Generando enlace seguro...</p></div>';
+            
+            document.getElementById('qrModal').classList.add('active');
+            
+            // Generar el magic link real usando Supabase
+            // Asegurar que 'contact.email' sea un email válido y 'contactId' sea correcto
+            const updateUrl = await generateRealMagicLink(contact.email, contactId);
+            
+            console.log('📏 Longitud final de URL para QR:', updateUrl.length);
+            
+            // Verificar si la URL es demasiado larga para QR
+            if (updateUrl.length > 800) {
+                console.warn('URL demasiado larga para QR, usando versión acortada');
+                // Crear una versión más corta del enlace
+                const shortUrl = `https://ochavenezuela.github.io/update-contact.html?id=${contactId}`;
+                console.log('📏 URL acortada:', shortUrl.length, 'caracteres');
+                generateQRCode(qrContainer, shortUrl);
+            } else {
+                generateQRCode(qrContainer, updateUrl);
             }
             
-            function setupEventListenersApp() {
-                document.getElementById('searchInput').addEventListener('input', debounce(handleSearch, 300));
-                document.getElementById('contactForm').addEventListener('submit', handleContactSubmit);
-                document.getElementById('espacioFilter').addEventListener('change', handleEspacioFilter);
-            }
-
-            // Render contacts with improved action buttons
-            function renderContacts() {
-                const tbody = document.getElementById('contactsTableBody');
-                tbody.innerHTML = '';
-                
-                if (filteredContacts.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No se encontraron contactos que coincidan con los filtros.</td></tr>';
-                    return;
-                }
-                
-                filteredContacts.forEach(contact => {
-                    const tr = document.createElement('tr');
-                    
-                    // Format phone for WhatsApp
-                    const phoneForWhatsApp = formatPhoneForWhatsApp(contact.Teléfono);
-                    const whatsappBtn = phoneForWhatsApp ? 
-                        `<button class="action-btn action-btn-whatsapp" data-tooltip="WhatsApp" onclick="sendWhatsApp('${phoneForWhatsApp}')">
-                            <i class="fab fa-whatsapp"></i>
-                        </button>` : '';
-                    
-                    tr.innerHTML = `
-                        <td><input type="checkbox" class="contact-checkbox" value="${contact.id}" onchange="toggleContactSelection('${contact.id}')"></td>
-                        <td>${contact.organizacion || ''}</td>
-                        <td>${contact.siglas || ''}</td>
-                        <td>${contact.punto_focal || ''}</td>
-                        <td>${contact.cargo || ''}</td>
-                        <td>
-                            ${contact.email || ''}
-                            ${contact.email ? `<i class="fas fa-copy copy-icon" title="Copiar email" onclick="copyToClipboard('${contact.email}', this)"></i>` : ''}
-                        </td>
-                        <td>${contact.espacio_coordinacion || ''}</td>
-                        <td>
-                            <div class="action-buttons">
-                                <button class="action-btn action-btn-view" data-tooltip="Ver Detalles" onclick="viewContact('${contact.id}')">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                                <button class="action-btn action-btn-edit" data-tooltip="Editar" onclick="editContact('${contact.id}')">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="action-btn action-btn-qr" data-tooltip="Código QR" onclick="showQRModal('${contact.id}')">
-                                    <i class="fas fa-qrcode"></i>
-                                </button>
-                                ${whatsappBtn}
-                                <button class="action-btn action-btn-delete" data-tooltip="Eliminar" onclick="deleteContact('${contact.id}')">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </td>`;
-                    tbody.appendChild(tr);
-                });
-            }
-
-            // WhatsApp function for individual contact
-            function sendWhatsApp(phone) {
-                if (!phone) {
-                    showAppMessage('Número de Teléfono no disponible', 'warning');
-                    return;
-                }
-                
-                const message = encodeURIComponent('Mensaje de OCHA Maracaibo:\n\n');
-                window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
-            }
-
-            async function importContactsFromFile(event) {
-                const file = event.target.files[0];
-                if (!file) return;
-                
-                showAppMessage('Procesando archivo...', 'info', false);
-                try {
-                    let jsonData;
-                    
-                    if (file.name.endsWith('.txt') || file.name.endsWith('.csv')) {
-                        const text = await readFileAsText(file);
-                        jsonData = parseCsvText(text);
-                    } else if (file.name.endsWith('.xlsx')) {
-                        const arrayBuffer = await readFileAsArrayBuffer(file);
-                        jsonData = parseExcelFile(arrayBuffer);
-                    } else {
-                        throw new Error("Formato de archivo no soportado. Use .txt, .csv o .xlsx.");
-                    }
-
-                    if (!jsonData || jsonData.length === 0) {
-                        showAppMessage('El archivo importado está vacío o no se pudo leer.', 'error');
-                        return;
-                    }
-				    console.log("Datos parseados del archivo:", jsonData.slice(0, 3));
-                    await processAndUpsertContacts(jsonData, 'archivo');
-                    
-                } catch (error) {
-                    console.error("Error en importContactsFromFile:", error);
-                    showAppMessage('Error importando contactos desde archivo: ' + error.message, 'error');
-                } finally {
-                    event.target.value = null;
-                }
-            }
-
-            function readFileAsText(file) {
-                return new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = (event) => resolve(event.target.result);
-                    reader.onerror = (error) => reject(error);
-                    reader.readAsText(file, 'UTF-8');
-                });
-            }
-
-            function readFileAsArrayBuffer(file) {
-                return new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = (event) => resolve(event.target.result);
-                    reader.onerror = (error) => reject(error);
-                    reader.readAsArrayBuffer(file);
-                });
-            }
-
-            function parseCsvText(csvText) {
-                const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== '');
-                if (lines.length < 2) return [];
-                
-                const headers = lines[0].split(';').map(h => h.replace(/"/g, '').trim());
-                const jsonData = [];
-
-                for (let i = 1; i < lines.length; i++) {
-                    if (lines[i].toLowerCase().startsWith('total')) continue;
-
-                    const values = lines[i].split(';');
-                    const rowObject = {};
-                    headers.forEach((header, index) => {
-                        const value = values[index] ? values[index].trim() : "";
-                        rowObject[header] = value;
-                    });
-                    jsonData.push(rowObject);
-                }
-                return jsonData;
-            }
-
-            function parseExcelFile(arrayBuffer) {
-                const data = new Uint8Array(arrayBuffer);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const firstSheetName = workbook.SheetNames[0];
-                if (!firstSheetName) throw new Error("El archivo Excel no contiene hojas.");
-                const worksheet = workbook.Sheets[firstSheetName];
-                const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
-                return jsonData;
-            }
-
-            async function processAndUpsertContacts(jsonData, sourceType) {
-                showAppMessage(`Procesando ${jsonData.length} contactos desde ${sourceType}...`, 'info', false);
-                
-                const contactsToUpsert = jsonData.map(processImportRow).filter(c => c.email);
-
-                if (contactsToUpsert.length === 0) {
-                    showAppMessage('No se encontraron contactos válidos para importar (se requiere email).', 'error');
-                    return;
-                }
-
-                const chunkSize = 50;
-                let importedCount = 0;
-                let errorsCount = 0;
-
-                for (let i = 0; i < contactsToUpsert.length; i += chunkSize) {
-                    const chunk = contactsToUpsert.slice(i, i + chunkSize);
-                    const { error } = await supabase.from('contacts').upsert(chunk, { onConflict: 'email' });
-
-                    if (error) {
-                        console.error("Error during upsert for chunk:", error);
-                        errorsCount += chunk.length;
-                    } else {
-                        importedCount += chunk.length;
-                    }
-                    showAppMessage(`Procesando... ${i + chunk.length} de ${contactsToUpsert.length}`, 'info', false);
-                }
-                
-                let finalMessage = `${importedCount} contactos importados/actualizados.`;
-                if (errorsCount > 0) {
-                    finalMessage += ` ${errorsCount} filas no pudieron ser procesadas.`;
-                }
-                showAppMessage(finalMessage, errorsCount === 0 ? 'success' : 'error');
-
-                await loadContacts();
-            }
-
-            function processImportRow(row) {
-                const get = (keys) => {
-                    for (const key of keys) {
-                        const foundKey = Object.keys(row).find(k => k.toLowerCase() === key.toLowerCase());
-                        if (foundKey && row[foundKey] !== undefined && row[foundKey] !== null) {
-                            return String(row[foundKey]).trim();
-                        }
-                    }
-                    return '';
-                };
-                const getBool = (keys) => {
-                    const val = get(keys).toLowerCase();
-                    return val === 'sí' || val === 's' || val === 'si' || val === 'true' || val === '1' || val === 'yes';
-                };
-
-                return {
-                    organizacion: get(['Organización']),
-                    siglas: get(['Siglas']),
-                    punto_focal: get(['Punto Focal', 'Nombre Punto Focal']),
-                    cargo: get(['Cargo', 'Puesto']),
-                    email: get(['Email', 'Correo Electrónico']),
-                    Teléfono: get(['Teléfono', 'Tel']),
-                    tipo_organizacion: get(['Tipo de Organización', 'Tipo Organización']),
-                    reporta_345w: getBool(['Reporta en el 345W', '345W Report']),
-                    socio_implementador: getBool(['Socio Implementador', 'Implementer Partner']),
-                    organizacion_lider: getBool(['Organización Líder', 'Lead Org']),
-                    participacion_flc: getBool(['Participación FLC', 'FLC Participation']),
-                    espacio_coordinacion: get(['Espacio de Coordinación']),
-                    sectores_concat: get(['Sectores', 'Sectors']),
-                    municipios_concat: get(['Municipios', 'Municipalities'])
-                };
-            }
-            
-            function exportExcel() {
-                const exportData = filteredContacts.map(contact => ({
-                    'Organización': contact.organizacion,
-                    'Siglas': contact.siglas,
-                    'Punto Focal': contact.punto_focal,
-                    'Cargo': contact.cargo,
-                    'Email': contact.email,
-                    'Teléfono': contact.Teléfono,
-                    'Tipo de Organización': contact.tipo_organizacion,
-                    'Reporta en el 345W': contact.reporta_345w ? 'Sí' : 'No',
-                    'Socio Implementador': contact.socio_implementador ? 'Sí' : 'No',
-                    'Organización Líder': contact.organizacion_lider ? 'Sí' : 'No',
-                    'Participación FLC': contact.participacion_flc ? 'Sí' : 'No',
-                    'Espacio de Coordinación': contact.espacio_coordinacion,
-                    'Sectores': contact.sectores_concat,
-                    'Municipios': contact.municipios_concat
-                }));
-                
-                const ws = XLSX.utils.json_to_sheet(exportData);
-                const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, 'Contactos');
-                XLSX.writeFile(wb, `contactos_ocha_maracaibo_${new Date().toISOString().split('T')[0]}.xlsx`);
-                showAppMessage('Exportación Excel completada exitosamente', 'success');
-            }
-
-            function exportPDF() {
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-
-                // Header function for all pages
-                const addHeader = (pageNumber = 1) => {
-                    doc.setFontSize(16);
-                    doc.setTextColor(0, 114, 188); // OCHA Blue
-                    doc.text('Sub Oficina OCHA Maracaibo', doc.internal.pageSize.width / 2, 15, { align: 'center' });
-                    doc.setFontSize(12);
-                    doc.setTextColor(0, 0, 0);
-                    doc.text('Lista de Contactos Humanitarios', doc.internal.pageSize.width / 2, 25, { align: 'center' });
-                };
-
-                // Footer function for all pages
-                const addFooter = (pageNumber, totalPages) => {
-                    const today = new Date().toLocaleDateString('es-ES');
-                    doc.setFontSize(8);
-                    doc.setTextColor(100);
-                    doc.text(`Fecha: ${today}`, 20, doc.internal.pageSize.height - 10);
-                    doc.text(`Página ${pageNumber} de ${totalPages}`, doc.internal.pageSize.width - 20, doc.internal.pageSize.height - 10, { align: 'right' });
-                };
-
-                // Prepare data for table
-                const tableData = filteredContacts.map(c => [
-                    c.organizacion || '', 
-                    c.siglas || '', 
-                    c.punto_focal || '', 
-                    c.cargo || '', 
-                    c.email || '', 
-                    c.Teléfono || '', 
-                    c.tipo_organizacion || '',
-                    c.espacio_coordinacion || ''
-                ]);
-
-                // Calculate total pages needed
-                const rowsPerPage = 15; // Approximate rows that fit per page
-                const totalPages = Math.ceil(tableData.length / rowsPerPage);
-
-                // Add content with proper pagination
-                doc.autoTable({
-                    head: [['Organización', 'Siglas', 'Punto Focal', 'Cargo', 'Email', 'Teléfono', 'Tipo Org.', 'Espacio']],
-                    body: tableData,
-                    startY: 35,
-                    margin: { top: 35, bottom: 20 },
-                    headStyles: { 
-                        fillColor: [0, 114, 188],
-                        textColor: 255,
-                        fontStyle: 'bold',
-                        fontSize: 8
-                    },
-                    bodyStyles: { 
-                        fontSize: 7,
-                        cellPadding: 1.5,
-                        valign: 'middle'
-                    },
-                    columnStyles: {
-                        0: { cellWidth: 40 }, // Organización
-                        1: { cellWidth: 35 }, // Siglas
-                        2: { cellWidth: 30 }, // Punto Focal
-                        3: { cellWidth: 30 }, // Cargo
-                        4: { cellWidth: 45 }, // Email
-                        5: { cellWidth: 30 }, // Teléfono
-                        6: { cellWidth: 30 }, // Tipo Org
-                        7: { cellWidth: 30 }  // Espacio
-                    },
-                    didDrawPage: (data) => {
-                        addHeader();
-                        addFooter(data.pageNumber, totalPages);
-                    },
-                    showHead: 'everyPage',
-                    theme: 'striped'
-                });
-
-                doc.save(`contactos_ocha_maracaibo_${new Date().toISOString().split('T')[0]}.pdf`);
-                showAppMessage('Exportación PDF completada exitosamente', 'success');
-            }
-
-            // Selection functions
-            function toggleSelectAll() {
-                const selectAllCheckbox = document.getElementById('selectAll');
-                const contactCheckboxes = document.querySelectorAll('.contact-checkbox:not(#selectAll)');
-                
-                if (selectAllCheckbox.checked) {
-                    contactCheckboxes.forEach(checkbox => {
-                        checkbox.checked = true;
-                        selectedContacts.add(checkbox.value);
-                    });
-                } else {
-                    contactCheckboxes.forEach(checkbox => {
-                        checkbox.checked = false;
-                    });
-                    selectedContacts.clear();
-                }
-                updateSelectionControls();
-            }
-
-            function toggleContactSelection(contactId) {
-                if (selectedContacts.has(contactId)) {
-                    selectedContacts.delete(contactId);
-                } else {
-                    selectedContacts.add(contactId);
-                }
-                
-                updateSelectAllCheckbox();
-                updateSelectionControls();
-            }
-
-            function updateSelectAllCheckbox() {
-                const selectAllCheckbox = document.getElementById('selectAll');
-                const contactCheckboxes = document.querySelectorAll('.contact-checkbox:not(#selectAll)');
-                const checkedCheckboxes = document.querySelectorAll('.contact-checkbox:not(#selectAll):checked');
-                
-                if (checkedCheckboxes.length === 0) {
-                    selectAllCheckbox.indeterminate = false;
-                    selectAllCheckbox.checked = false;
-                } else if (checkedCheckboxes.length === contactCheckboxes.length) {
-                    selectAllCheckbox.indeterminate = false;
-                    selectAllCheckbox.checked = true;
-                } else {
-                    selectAllCheckbox.indeterminate = true;
-                }
-            }
-
-            function updateSelectionControls() {
-                const selectionControls = document.getElementById('selectionControls');
-                const selectionInfo = document.getElementById('selectionInfo');
-                
-                if (selectedContacts.size > 0) {
-                    selectionControls.classList.add('active');
-                    selectionInfo.textContent = `${selectedContacts.size} contacto${selectedContacts.size > 1 ? 's' : ''} seleccionado${selectedContacts.size > 1 ? 's' : ''}`;
-                } else {
-                    selectionControls.classList.remove('active');
-                }
-            }
-
-            function clearSelection() {
-                selectedContacts.clear();
-                document.querySelectorAll('.contact-checkbox').forEach(checkbox => {
-                    checkbox.checked = false;
-                });
-                // Reset selectAll checkbox state
-                const selectAllCheckbox = document.getElementById('selectAll');
-                selectAllCheckbox.indeterminate = false;
-                selectAllCheckbox.checked = false;
-                updateSelectionControls();
-            }
-
-            function createGroupFromSelection() {
-                if (selectedContacts.size === 0) {
-                    showAppMessage('Seleccione al menos un contacto para crear un grupo', 'error');
-                    return;
-                }
-                
-                // Set pending action and prompt for admin password
-                pendingAdminAction = 'createGroup'; 
-                document.getElementById('adminActionMessage').textContent = 'Por favor, ingresa la clave de administrador para crear grupos.';
-                document.getElementById('adminPasswordModal').classList.add('active');
-            }
-
-            function showGroupModal() {
-                const selectedContactsList = document.getElementById('selectedContactsList');
-                const selectedContactsArray = Array.from(selectedContacts).map(id => 
-                    contacts.find(c => c.id === id)
-                ).filter(Boolean);
-                
-                selectedContactsList.innerHTML = `
-                    <h5>Contactos seleccionados (${selectedContactsArray.length}):</h5>
-                    <ul style="max-height: 150px; overflow-y: auto; margin: 0.5rem 0;">
-                        ${selectedContactsArray.map(contact => 
-                            `<li style="margin-bottom: 0.25rem;">${contact.organizacion} - ${contact.punto_focal} (${contact.email})</li>`
-                        ).join('')}
-                    </ul>
-                `;
-                
-                document.getElementById('groupModal').classList.add('active');
-            }
-
-            function saveGroup() {
-                const groupName = document.getElementById('groupName').value.trim();
-                const groupDescription = document.getElementById('groupDescription').value.trim();
-                
-                if (!groupName) {
-                    const groupModalMessage = document.getElementById('groupModalMessage');
-                    groupModalMessage.textContent = 'El nombre del grupo es obligatorio.';
-                    groupModalMessage.className = 'status-message status-error';
-                    groupModalMessage.style.display = 'block';
-                    return;
-                }
-
-                // Simulate saving the group (in a real implementation, this would save to Supabase)
-                try {
-                    // Here you would implement the actual group creation logic with Supabase
-                    // For now, we'll just show a success message
-                    
-                    showAppMessage(`Grupo "${groupName}" creado exitosamente con ${selectedContacts.size} contactos.`, 'success');
-                    
-                    closeGroupModal();
-                    clearSelection();
-                    
-                } catch (error) {
-                    const groupModalMessage = document.getElementById('groupModalMessage');
-                    groupModalMessage.textContent = 'Error al crear el grupo: ' + error.message;
-                    groupModalMessage.className = 'status-message status-error';
-                    groupModalMessage.style.display = 'block';
-                }
-            }
-
-            function closeGroupModal() {
-                document.getElementById('groupModal').classList.remove('active');
-                document.getElementById('selectedContactsList').innerHTML = '';
-                document.getElementById('groupName').value = '';
-                document.getElementById('groupDescription').value = '';
-                const groupModalMessage = document.getElementById('groupModalMessage');
-                groupModalMessage.textContent = '';
-                groupModalMessage.className = 'status-message';
-                groupModalMessage.style.display = 'none';
-            }
-
-            function sendEmailToSelection() {
-                if (selectedContacts.size === 0) {
-                    showAppMessage('Seleccione al menos un contacto para enviar correo', 'error');
-                    return;
-                }
-                
-                const selectedContactsArray = Array.from(selectedContacts).map(id => 
-                    contacts.find(c => c.id === id)
-                ).filter(Boolean);
-                
-                const emails = selectedContactsArray.map(contact => contact.email).filter(Boolean);
-                const emailList = emails.join(';');
-                
-                const subject = encodeURIComponent('Comunicación OCHA Maracaibo');
-                const body = encodeURIComponent('Estimados colegas,\n\n\n\nSaludos cordiales,\nSub Oficina OCHA Maracaibo');
-                
-                window.open(`mailto:${emailList}?subject=${subject}&body=${body}`);
-            }
-
-            function sendWhatsAppToSelection() {
-                if (selectedContacts.size === 0) {
-                    showAppMessage('Seleccione al menos un contacto para enviar WhatsApp', 'error');
-                    return;
-                }
-                
-                const selectedContactsArray = Array.from(selectedContacts).map(id => 
-                    contacts.find(c => c.id === id)
-                ).filter(Boolean);
-                
-                const phones = selectedContactsArray
-                    .map(contact => contact.Teléfono)
-                    .filter(Boolean)
-                    .map(formatPhoneForWhatsApp)
-                    .filter(Boolean);
-                
-                if (phones.length === 0) {
-                    showAppMessage('Los contactos seleccionados no tienen Teléfonos registrados o el formato es incorrecto.', 'warning');
-                    return;
-                }
-                
-                const message = encodeURIComponent('Mensaje de OCHA Maracaibo:\n\n');
-                phones.forEach(phone => {
-                    window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
-                });
-            }
-
-            function formatPhoneForWhatsApp(phone) {
-                if (!phone) return null;
-                let cleaned = phone.replace(/\D/g, '');
-                // Assuming Venezuelan numbers starting with 04, which are 10 digits
-                // We need to prepend the country code '58'
-                if (!cleaned.startsWith('58') && cleaned.length >= 10) {
-                    // Take last 10 digits and prepend 58
-                    cleaned = '58' + cleaned.substring(cleaned.length - 10); 
-                } else if (!cleaned.startsWith('58') && cleaned.length < 10) {
-                    // Invalid number format for WhatsApp if it's too short and doesn't start with 58
-                    return null; 
-                }
-                // WhatsApp requires the '+' prefix, but wa.me links handle it if omitted. Let's keep it clean.
-                return cleaned; 
-            }
-
-            async function handleContactSubmit(e) {
-                e.preventDefault();
-                
-                const contactId = document.getElementById('contactId').value;
-                
-                // Gather selected sectors, municipalities, and spaces
-                const selectedSectores = [];
-                document.querySelectorAll('#sectoresMultiSelect input[type="checkbox"]:checked').forEach(checkbox => {
-                    selectedSectores.push(checkbox.value);
-                });
-                
-                const selectedMunicipios = [];
-                document.querySelectorAll('#municipiosMultiSelect input[type="checkbox"]:checked').forEach(checkbox => {
-                    selectedMunicipios.push(checkbox.value);
-                });
-                
-                const selectedEspacios = [];
-                document.querySelectorAll('#espaciosMultiSelect input[type="checkbox"]:checked').forEach(checkbox => {
-                    selectedEspacios.push(checkbox.value);
-                });
-                
-                // Construct contact data object
-                const contactData = {
-                    organizacion: document.getElementById('organizacion').value.trim(),
-                    siglas: document.getElementById('siglas').value.trim(),
-                    punto_focal: document.getElementById('punto_focal').value.trim(),
-                    cargo: document.getElementById('cargo').value.trim(),
-                    email: document.getElementById('email').value.trim().toLowerCase(),
-                    Teléfono: document.getElementById('Teléfono').value.trim(),
-                    tipo_organizacion: document.getElementById('tipo_organizacion').value.trim(),
-                    espacio_coordinacion: selectedEspacios.join(', '),
-                    sectores_concat: selectedSectores.join(', '),
-                    municipios_concat: selectedMunicipios.join(', '),
-                    reporta_345w: document.getElementById('reporta_345w').checked,
-                    socio_implementador: document.getElementById('socio_implementador').checked,
-                    organizacion_lider: document.getElementById('organizacion_lider').checked,
-                    participacion_flc: document.getElementById('participacion_flc').checked,
-                };
-                
-                try {
-                    showAppMessage('Guardando contacto...', 'info', false);
-                    
-                    let query;
-                    if (contactId) {
-                        query = supabase.from('contacts').update(contactData).eq('id', contactId);
-                    } else {
-                        query = supabase.from('contacts').insert([contactData]);
-                    }
-                    const { error } = await query;
-                    if (error) throw error;
-                    
-                    showAppMessage(contactId ? 'Contacto actualizado' : 'Contacto creado', 'success');
-                    closeContactModal();
-                    await loadContacts();
-                    
-                } catch (error) {
-                    console.error("Error saving contact:", error, contactData);
-                    showAppMessage(`Error guardando contacto: ${error.message}`, 'error');
-                }
-            }
-
-            function viewContact(id) {
-                const contact = contacts.find(c => c.id.toString() === id);
-                if (!contact) {
-                    console.error("Contact not found for view:", id);
-                    return;
-                }
-
-                const viewBody = document.getElementById('viewContactBody');
-                viewBody.innerHTML = `
-                    <h4 style="color: var(--color-ochablue); margin-bottom: 1rem;">${contact.organizacion || 'N/A'} (${contact.siglas || 'N/A'})</h4>
-                    <p><strong>Punto Focal:</strong> ${contact.punto_focal || 'N/A'}</p>
-                    <p><strong>Cargo:</strong> ${contact.cargo || 'N/A'}</p>
-                    <p><strong>Email:</strong> ${contact.email || 'N/A'}<i class="fas fa-copy copy-icon" title="Copiar email" onclick="copyToClipboard('${contact.email}', this)"></i></p>
-                    <p><strong>Teléfono:</strong> ${contact.Teléfono || 'N/A'}</p>
-                    <p><strong>Tipo de Organización:</strong> ${contact.tipo_organizacion || 'N/A'}</p>
-                    <p><strong>Espacio de Coordinación:</strong> ${contact.espacio_coordinacion || 'N/A'}</p>
-                    <hr>
-                    <h5 style="color: var(--color-ochablue); margin-top: 1rem; margin-bottom: 0.5rem;">Sectores</h5>
-                    <p>${contact.sectores_concat || 'No especificado'}</p>
-                    <h5 style="color: var(--color-ochablue); margin-top: 1rem; margin-bottom: 0.5rem;">Municipios</h5>
-                    <p>${contact.municipios_concat || 'No especificado'}</p>
-                    <hr>
-                    <h5 style="color: var(--color-ochablue); margin-top: 1rem; margin-bottom: 0.5rem;">Participación</h5>
-                    <p><strong>Reporta en el 345W:</strong> ${contact.reporta_345w ? 'Sí' : 'No'}</p>
-                    <p><strong>Socio Implementador:</strong> ${contact.socio_implementador ? 'Sí' : 'No'}</p>
-                    <p><strong>Organización Líder:</strong> ${contact.organizacion_lider ? 'Sí' : 'No'}</p>
-                    <p><strong>Participación FLC:</strong> ${contact.participacion_flc ? 'Sí' : 'No'}</p>
-                `;
-
-                document.getElementById('viewContactModal').classList.add('active');
-            }
-
-            function closeViewContactModal() {
-                document.getElementById('viewContactModal').classList.remove('active');
-            }
-
-            async function editContact(id) {
-                const contact = contacts.find(c => c.id.toString() === id);
-                if (!contact) {
-                    console.error("Contact not found for edit:", id);
-                    return;
-                }
-                
-                document.getElementById('modalTitle').textContent = 'Editar Contacto';
-                document.getElementById('contactId').value = id;
-                
-                // Fill form fields
-                document.getElementById('organizacion').value = contact.organizacion || '';
-                document.getElementById('siglas').value = contact.siglas || '';
-                document.getElementById('punto_focal').value = contact.punto_focal || '';
-                document.getElementById('cargo').value = contact.cargo || '';
-                document.getElementById('email').value = contact.email || '';
-                document.getElementById('Teléfono').value = contact.Teléfono || '';
-                document.getElementById('tipo_organizacion').value = contact.tipo_organizacion || '';
-                
-                // Set checkboxes
-                document.getElementById('reporta_345w').checked = contact.reporta_345w || false;
-                document.getElementById('socio_implementador').checked = contact.socio_implementador || false;
-                document.getElementById('organizacion_lider').checked = contact.organizacion_lider || false;
-                document.getElementById('participacion_flc').checked = contact.participacion_flc || false;
-                
-                // Set multi-select checkboxes for Sectores
-                const contactSectores = (contact.sectores_concat || '').split(',').map(s => s.trim());
-                document.querySelectorAll('#sectoresMultiSelect input[type="checkbox"]').forEach(checkbox => {
-                    checkbox.checked = contactSectores.includes(checkbox.value);
-                });
-                
-                // Set multi-select checkboxes for Municipios
-                const contactMunicipios = (contact.municipios_concat || '').split(',').map(m => m.trim());
-                document.querySelectorAll('#municipiosMultiSelect input[type="checkbox"]').forEach(checkbox => {
-                    checkbox.checked = contactMunicipios.includes(checkbox.value);
-                });
-                
-                // Set multi-select checkboxes for Espacios
-                const contactEspacios = (contact.espacio_coordinacion || '').split(',').map(e => e.trim());
-                document.querySelectorAll('#espaciosMultiSelect input[type="checkbox"]').forEach(checkbox => {
-                    checkbox.checked = contactEspacios.includes(checkbox.value);
-                });
-                
-                document.getElementById('contactModal').classList.add('active');
-            }
-
-            async function deleteContact(id) {
-                pendingDeleteId = id;
-                const contact = contacts.find(c => c.id === id);
-                
-                pendingAdminAction = 'delete'; 
-                document.getElementById('adminActionMessage').textContent = 'Por favor, ingresa la clave de administrador para eliminar este contacto.';
-                document.getElementById('adminPasswordModal').classList.add('active');
-            }
-
-            function confirmAdminAction() {
-                const passwordInput = document.getElementById('adminPassword');
-                const adminPasswordError = document.getElementById('adminPasswordError');
-                const enteredPassword = passwordInput.value;
-
-                if (enteredPassword === ADMIN_PASSWORD) {
-                    adminPasswordError.textContent = '';
-                    adminPasswordError.style.display = 'none';
-                    passwordInput.value = '';
-                    document.getElementById('adminPasswordModal').classList.remove('active');
-
-                    // Execute the pending action
-                    if (pendingAdminAction === 'delete' && pendingDeleteId) {
-                        performDelete(pendingDeleteId);
-                        pendingDeleteId = null;
-                    } else if (pendingAdminAction === 'createGroup') {
-                        showGroupModal();
-                    }
-                    
-                    pendingAdminAction = null;
-                } else {
-                    adminPasswordError.textContent = 'Clave de administrador incorrecta.';
-                    adminPasswordError.style.display = 'block';
-                }
-            }
-
-            function closeAdminPasswordModal() {
-                document.getElementById('adminPasswordModal').classList.remove('active');
-                document.getElementById('adminPassword').value = '';
-                const adminPasswordError = document.getElementById('adminPasswordError');
-                adminPasswordError.textContent = '';
-                adminPasswordError.style.display = 'none';
-                pendingDeleteId = null;
-                pendingAdminAction = null;
-            }
-
-            async function performDelete(id) {
-                try {
-                    showAppMessage('Eliminando contacto...', 'info', false);
-                    const { error } = await supabase.from('contacts').delete().eq('id', id);
-                    if (error) throw error;
-                    showAppMessage('Contacto eliminado exitosamente', 'success');
-                    await loadContacts();
-                } catch (error) {
-                    showAppMessage('Error eliminando contacto: ' + error.message, 'error');
-                }
-            }
-
-            function showAddContactModal() {
-                document.getElementById('modalTitle').textContent = 'Nuevo Contacto';
-                document.getElementById('contactForm').reset();
-                document.getElementById('contactId').value = '';
-                document.getElementById('tipo_organizacion').selectedIndex = 0;
-                
-                // Clear all multi-select checkboxes
-                document.querySelectorAll('#sectoresMultiSelect input[type="checkbox"]').forEach(checkbox => checkbox.checked = false);
-                document.querySelectorAll('#municipiosMultiSelect input[type="checkbox"]').forEach(checkbox => checkbox.checked = false);
-                document.querySelectorAll('#espaciosMultiSelect input[type="checkbox"]').forEach(checkbox => checkbox.checked = false);
-                
-                document.getElementById('contactModal').classList.add('active');
-            }
-
-            function closeContactModal() {
-                document.getElementById('contactModal').classList.remove('active');
-            }
-			function debounce(func, wait) {
-                let timeout;
-                return function executedFunction(...args) {
-                    const later = () => { clearTimeout(timeout); func(...args); };
-                    clearTimeout(timeout);
-                    timeout = setTimeout(later, wait);
-                };
-            }
-
-            function showAppMessage(message, type, autoHide = true) {
-                const messageEl = document.getElementById('appStatusMessage');
-                messageEl.textContent = message;
-                messageEl.className = `status-message status-${type}`;
-                messageEl.style.display = 'block';
-                
-                if (autoHide) {
-                    setTimeout(() => {
-                        if (messageEl.textContent === message) { 
-                            messageEl.style.display = 'none';
-                        }
-                    }, 5000);
-                }
-            }
-            
-            function hideAuthMessages() {
-                ['loginError', 'loginSuccess', 'registerError', 'registerSuccess', 'resetError', 'resetSuccess'].forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) {
-                        el.textContent = '';
-                        el.style.display = 'none';
-                    }
-                });
-            }
-
-            function showError(elementId, message) {
-                const errorEl = document.getElementById(elementId);
-                if (!errorEl) return;
-                
-                const successId = elementId.replace("Error", "Success");
-                const successEl = document.getElementById(successId);
-                if (successEl) {
-                    successEl.textContent = '';
-                    successEl.style.display = 'none';
-                }
-                
-                errorEl.textContent = message;
-                errorEl.style.display = 'block';
-            }
-
-            function showSuccess(elementId, message) {
-                const successEl = document.getElementById(elementId);
-                if (!successEl) return;
-                
-                const errorId = elementId.replace("Success", "Error");
-                const errorEl = document.getElementById(errorId);
-                if (errorEl) {
-                    errorEl.textContent = '';
-                    errorEl.style.display = 'none';
-                }
-                
-                successEl.textContent = message;
-                successEl.style.display = 'block';
-                
-                setTimeout(() => {
-                    if (successEl.textContent === message) {
-                        successEl.textContent = '';
-                        successEl.style.display = 'none';
-                    }
-                }, 5000);
-            }
-
-            window.addEventListener('DOMContentLoaded', () => {
-                setupAuthEventListeners();
-                // Check initial auth state on page load
-                const { data: session } = supabase.auth.getSession();
-                if (session && session.user) {
-                    currentUser = session.user;
-                    showMainApp();
-                } else {
-                    showLoginPage();
-                }
-            });
-
-            supabase.auth.onAuthStateChange(async (event, session) => {
-                console.log('Auth event:', event, session);
-                const previousUser = currentUser;
-                
-                if (event === "PASSWORD_RECOVERY") {
-                    console.log("Password recovery initiated.");
-                    showSuccess('loginSuccess', 'Se ha iniciado el proceso de recuperación de contraseña.');
-                }
-                
-                if (session && session.user) {
-                    currentUser = session.user;
-                    // Only show main app if it's currently hidden or if the user has changed
-                    if (document.getElementById('mainApp').style.display === 'none' || (previousUser && previousUser.id !== currentUser.id)) {
-                        appInitialized = false; // Reset app state if user changes
-                        showMainApp();
-                    } else if (document.getElementById('mainApp').style.display === 'block' && !appInitialized) {
-                        // If app is visible but not initialized (e.g., after page reload but session persisted)
-                        await initializeApp();
-                    }
-                    document.getElementById('userEmail').textContent = currentUser.email;
-                } else {
-                    currentUser = null;
-                    if (appInitialized) {
-                        // Clean up Supabase channel if user logs out
-                        if (contactChangesChannel) {
-                            try {
-                                await supabase.removeChannel(contactChangesChannel);
-                            } catch(e) {
-                                console.warn("Error removing old channel:", e);
-                            }
-                        }
-                    }
-                    appInitialized = false; // Mark app as not initialized
-                    showLoginPage();
-                }
-            });
-
-            function showAuthForm(formToShow) {
-                hideAuthMessages();
-                document.getElementById('loginForm').style.display = formToShow === 'login' ? 'block' : 'none';
-                document.getElementById('registerForm').style.display = formToShow === 'register' ? 'block' : 'none';
-                document.getElementById('passwordResetForm').style.display = formToShow === 'reset' ? 'block' : 'none';
-
-                document.getElementById('linkToRegister').style.display = formToShow === 'login' ? 'block' : 'none';
-                document.getElementById('linkToPasswordReset').style.display = formToShow === 'login' ? 'block' : 'none';
-                
-                document.getElementById('linkToLoginFromRegister').style.display = formToShow === 'register' ? 'block' : 'none';
-                document.getElementById('linkToLoginFromReset').style.display = formToShow === 'reset' ? 'block' : 'none';
-            }
-
-            async function handleLogin(e) {
-                e.preventDefault();
-                hideAuthMessages();
-                const email = document.getElementById('loginEmail').value;
-                const password = document.getElementById('loginPassword').value;
-                
-                try {
-                    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-                    if (error) throw error;
-                    showSuccess('loginSuccess', 'Ingreso exitoso. Redirigiendo...');
-                    // The onAuthStateChange listener will handle the redirection
-                } catch (error) {
-                    let errorMessage = error.message;
-                    if (errorMessage.includes("Failed to fetch")) {
-                        errorMessage = "Error de red o CORS. Verifique su conexión a internet.";
-                    } else if (errorMessage.includes("Invalid login credentials")) {
-                        errorMessage = "Credenciales inválidas. Por favor, revise su correo y contraseña.";
-                    } else if (errorMessage.includes("Email not confirmed")) {
-                        errorMessage = "Su correo electrónico no ha sido confirmado. Revise su bandeja de entrada para el enlace de confirmación.";
-                    }
-                    showError('loginError', `Error al ingresar: ${errorMessage}`);
-                }
-            }
-
-            async function handleRegister(e) {
-                e.preventDefault();
-                hideAuthMessages();
-                const email = document.getElementById('registerEmail').value;
-                const password = document.getElementById('registerPassword').value;
-                
-                try {
-                    const { data, error } = await supabase.auth.signUp({ email, password });
-                    if (error) throw error;
-                    
-                    // Check if user was created but email not confirmed
-                    if (data.user && data.user.identities && data.user.identities.length === 0) {
-                        showError('registerError', 'Este correo ya está registrado y requiere confirmación.');
-                    } else if (data.user && (data.user.email_confirmed_at === null && data.session === null)) {
-                        // User signed up but needs email confirmation
-                        showSuccess('registerSuccess', '¡Registro exitoso! Revisa tu correo para confirmar tu cuenta.');
-                    } else {
-                        // Registration successful and possibly auto-confirmed (depending on Supabase settings)
-                        showSuccess('registerSuccess', '¡Registro exitoso! Ahora puedes ingresar.');
-                        showAuthForm('login'); // Redirect to login form
-                    }
-                } catch (error) {
-                    let errorMessage = error.message;
-                    if (errorMessage.includes("duplicate key value violates unique constraint")) {
-                        errorMessage = "Este correo electrónico ya está en uso.";
-                    }
-                    showError('registerError', `Error en el registro: ${errorMessage}`);
-                }
-            }
-
-            async function handlePasswordResetRequest(e) {
-                e.preventDefault();
-                hideAuthMessages();
-                const email = document.getElementById('resetEmail').value;
-                
-                try {
-                    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                        // This URL must be configured in Supabase Auth settings for password reset
-                        redirectTo: window.location.origin + '/update-password.html' // Example path
-                    });
-                    if (error) throw error;
-                    showSuccess('resetSuccess', 'Si existe una cuenta asociada a este correo, se ha enviado un enlace para restablecer la contraseña.');
-                } catch (error) {
-                    let errorMessage = error.message;
-                     if (errorMessage.includes("User not found")) {
-                        errorMessage = "No se encontró ningún usuario con este correo electrónico.";
-                    }
-                    showError('resetError', 'Error al solicitar reseteo: ' + errorMessage);
-                }
-            }
-
-            async function handleLogout() {
-                showAppMessage("Cerrando sesión...", "info", false);
-                try {
-                    await supabase.auth.signOut();
-                    // The onAuthStateChange listener will handle showing the login page
-                } catch (error) {
-                    console.error("Error during logout:", error);
-                    showAppMessage("Error al cerrar sesión. Inténtalo de nuevo.", "error");
-                }
-            }
-
-            function showMainApp() {
-                console.log('Showing main app for user:', currentUser?.email);
-                document.getElementById('loginPage').style.display = 'none';
-                document.getElementById('mainApp').style.display = 'block';
-                if (currentUser) {
-                    document.getElementById('userEmail').textContent = currentUser.email;
-                }
-                // Initialize app data if not already done
-                if (!appInitialized) {
-                    initializeApp();
-                }
-            }
-
-            function showLoginPage() {
-                console.log('Showing login page');
-                document.getElementById('loginPage').style.display = 'flex';
-                document.getElementById('mainApp').style.display = 'none';
-                showAuthForm('login'); // Ensure login form is visible by default
-            }
-            
-            async function loadContacts() {
-                try {
-                    showAppMessage('Cargando contactos...', 'info', false);
-                    const { data, error } = await supabase
-                        .from('contacts')
-                        .select('*')
-                        .order('organizacion', { ascending: true });
-                        
-                    if (error) throw error;
-                    
-                    contacts = data || [];
-                    setupEspacioFilter(); // Update filter options based on loaded data
-                    applyFilters(); // Apply current filters to the loaded contacts
-                    showAppMessage(`Cargados ${contacts.length} contactos.`, 'success');
-                } catch (error) {
-                    console.error('Error cargando contactos:', error);
-                    showAppMessage('Error cargando contactos: ' + error.message, 'error');
-                }
-            }
-
-            function setupEspacioFilter() {
-                const espacioFilter = document.getElementById('espacioFilter');
-                // Use loaded contact data to populate filter, fallback to predefined list if no contacts yet
-                const availableSpaces = contacts.length > 0 
-                    ? [...new Set(contacts.map(c => c.espacio_coordinacion).filter(Boolean))].sort()
-                    : espaciosList; 
-                
-                espacioFilter.innerHTML = '<option value="">Todos los espacios</option>'; // Reset and add default
-                availableSpaces.forEach(espacio => {
-                    const option = document.createElement('option');
-                    option.value = espacio;
-                    option.textContent = espacio;
-                    espacioFilter.appendChild(option);
-                });
-            }
-
-            function handleSearch() {
-                activeFilters.search = document.getElementById('searchInput').value.toLowerCase();
-                applyFilters();
-            }
-
-            function handleEspacioFilter() {
-                activeFilters.espacio = document.getElementById('espacioFilter').value;
-                applyFilters();
-            }
-
-            function applyFilters() {
-                filteredContacts = contacts.filter(contact => {
-                    // Search filter: Check across multiple fields
-                    if (activeFilters.search) {
-                        const searchStr = activeFilters.search;
-                        const searchFields = [
-                            contact.organizacion,
-                            contact.siglas,
-                            contact.punto_focal,
-                            contact.cargo,
-                            contact.email,
-                            contact.Teléfono,
-                            contact.tipo_organizacion,
-                            contact.espacio_coordinacion,
-                            contact.sectores_concat,
-                            contact.municipios_concat
-                        ].filter(Boolean).join(' ').toLowerCase();
-                        if (!searchFields.includes(searchStr)) return false;
-                    }
-                    
-                    // Espacio filter (single select from sidebar)
-                    if (activeFilters.espacio && contact.espacio_coordinacion !== activeFilters.espacio) return false;
-                    
-                    // Sectores filter (multiple selected in sidebar)
-                    if (activeFilters.sectores.length > 0) {
-                        const contactSectores = (contact.sectores_concat || '').toLowerCase();
-                        const hasMatchingSector = activeFilters.sectores.some(sector => 
-                            contactSectores.includes(sector.toLowerCase())
-                        );
-                        if (!hasMatchingSector) return false;
-                    }
-                    
-                    // Municipios filter (multiple selected in sidebar)
-                    if (activeFilters.municipios.length > 0) {
-                        const contactMunicipios = (contact.municipios_concat || '').toLowerCase();
-                        const hasMatchingMunicipio = activeFilters.municipios.some(municipio => 
-                            contactMunicipios.includes(municipio.toLowerCase())
-                        );
-                        if (!hasMatchingMunicipio) return false;
-                    }
-                    
-                    return true;
-                });
-                
-                // Apply sorting based on current sortField and sortDirection
-                filteredContacts.sort((a, b) => {
-                    let valA = a[sortField];
-                    let valB = b[sortField];
-
-                    // Ensure values are strings for consistent comparison, handle null/undefined
-                    if (valA === null || valA === undefined) valA = '';
-                    if (valB === null || valB === undefined) valB = '';
-
-                    if (typeof valA === 'string') valA = valA.toLowerCase();
-                    if (typeof valB === 'string') valB = valB.toLowerCase();
-
-                    if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
-                    if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
-                    return 0;
-                });
-
-                renderContacts();
-                updateKPIs();
-                clearSelection(); // Clear selection when filters change
-            }
-
-            function resetFilters() {
-                activeFilters = { search: '', espacio: '', sectores: [], municipios: [] };
-                document.getElementById('searchInput').value = '';
-                document.getElementById('espacioFilter').value = '';
-                document.getElementById('municipiosFilter').value = ''; // Reset multiselect to default
-                document.querySelectorAll('.icon-item.active').forEach(item => item.classList.remove('active'));
-                applyFilters();
-            }
-
-            function updateKPIs() {
-                const kpiGrid = document.getElementById('kpiGrid');
-                kpiGrid.innerHTML = '';
-                
-                const orgs = new Set(filteredContacts.map(c => c.organizacion).filter(Boolean));
-                const uniqueEspacios = new Set(filteredContacts.map(c => c.espacio_coordinacion).filter(Boolean));
-                const uniqueSectores = new Set();
-                filteredContacts.forEach(c => {
-                    if (c.sectores_concat) {
-                        c.sectores_concat.split(',').forEach(s => uniqueSectores.add(s.trim()));
-                    }
-                });
-
-                createKPICard(kpiGrid, { icon: 'fa-users', value: filteredContacts.length, label: 'Total Contactos' });
-                createKPICard(kpiGrid, { icon: 'fa-building', value: orgs.size, label: 'Organizaciones' });
-                createKPICard(kpiGrid, { icon: 'fa-map-marker-alt', value: uniqueEspacios.size, label: 'Espacios Coord.' });
-                createKPICard(kpiGrid, { icon: 'fa-th-list', value: uniqueSectores.size, label: 'Sectores Activos' });
-            }
-
-            function createKPICard(container, data) {
-                const div = document.createElement('div');
-                div.className = 'kpi-card';
-                div.innerHTML = `
-                    <i class="fas ${data.icon} kpi-icon"></i>
-                    <div class="kpi-value">${data.value}</div>
-                    <div class="kpi-label">${data.label}</div>
-                `;
-                container.appendChild(div);
-            }
-
-            function copyToClipboard(text, element) {
-                if (!text) return;
-                navigator.clipboard.writeText(text).then(() => {
-                    const originalIconClass = element.className;
-                    const originalColor = element.style.color;
-                    element.className = 'fas fa-check-circle';
-                    element.style.color = 'var(--ocha-green)';
-                    
-                    setTimeout(() => {
-                        element.className = originalIconClass;
-                        element.style.color = originalColor;
-                    }, 1500);
-                }).catch(err => {
-                    console.error('Error copying to clipboard: ', err);
-                    showAppMessage('Error al copiar el correo', 'error');
-                });
-            }
-
-            function sortTable(field) {
-                if (sortField === field) {
-                    sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
-                } else {
-                    sortField = field;
-                    sortDirection = 'asc';
-                }
-                
-                // Update sort icons
-                document.querySelectorAll('.sort-icon').forEach(icon => {
-                    icon.className = 'fas fa-sort sort-icon';
-                });
-                
-                const currentHeader = document.querySelector(`th[onclick="sortTable('${field}')"] .sort-icon`);
-                if (currentHeader) {
-                    currentHeader.className = `fas fa-sort-${sortDirection === 'asc' ? 'up' : 'down'} sort-icon`;
-                }
-                
-                applyFilters(); // Re-render with sorted data
-            }
-
-            // --- Magic Link Specific Functions ---
-            
-            // Placeholder for generateMagicLink if you want to use it for email-based links too
-            async function generateMagicLink() {
-                const email = document.getElementById('loginEmail').value.trim();
-                
-                if (!email) {
-                    showError('loginError', 'Por favor, ingrese su correo electrónico para generar el enlace.');
-                    return;
-                }
-
-                try {
-                    // For email links, we'd ideally use Supabase's built-in email sending.
-                    // This example focuses on QR generation, but this function would call
-                    // generateRealMagicLink and then *also* trigger Supabase email send if needed.
-                    
-                    // Example: Get the contact ID for the email if it exists
-                    const { data: contact, error: contactError } = await supabase
-                        .from('contacts')
-                        .select('id')
-                        .eq('email', email)
-                        .single();
-                    
-                    let contactId = contact ? contact.id : null;
-
-                    const magicLink = await generateRealMagicLink(email, contactId);
-
-                    // If we also wanted to SEND an email via Supabase (requires email setup)
-                    /*
-                    const { error: supabaseSendError } = await supabase.auth.signInWithOtp({
-                        email: email,
-                        options: {
-                            emailRedirectTo: magicLink, // This is where Supabase redirects *after* they click the link it sends
-                            shouldCreateUser: false
-                        }
-                    });
-                    if (supabaseSendError) throw supabaseSendError;
-                    */
-                   
-                    // For QR, we just need the link. For email, you'd likely need the Supabase send.
-                    // This button might be better served by the `generateRealMagicLink` logic directly.
-                    showSuccess('loginSuccess', 'Se ha generado un enlace de actualización. Si el email está asociado a un contacto, revisa tu bandeja para el enlace.');
-                    
-                } catch (error) {
-                    console.error('Error generating magic link for email:', error);
-                    showError('loginError', 'Error generando enlace: ' + error.message);
-                }
-            }
-
-            // Modified showQRModal function (as provided in previous response)
-            async function showQRModal(contactId) {
-                const contact = contacts.find(c => c.id.toString() === contactId);
-                if (!contact) {
-                    showAppMessage('Contacto no encontrado', 'error');
-                    return;
-                }
-
-                const waitForQRCode = (callback) => {
-                    if (typeof QRCode !== 'undefined') {
-                        callback();
-                    } else {
-                        let attempts = 0;
-                        const interval = setInterval(() => {
-                            attempts++;
-                            if (typeof QRCode !== 'undefined') {
-                                clearInterval(interval);
-                                callback();
-                            } else if (attempts > 20) {
-                                clearInterval(interval);
-                                console.error('QRCode library failed to load in time.');
-                                showAppMessage('Error: La librería para generar códigos QR no se ha cargado. Revise su conexión a internet y recargue la página.', 'error');
-                            }
-                        }, 250);
-                    }
-                };
-
-                waitForQRCode(async () => { // Make the callback async
-                    try {
-                        currentQRContactId = contactId;
-                        document.getElementById('qrContactName').textContent = `${contact.organizacion} - ${contact.punto_focal}`;
-                        
-                        // Show loading message
-                        const qrContainer = document.getElementById('qrcode');
-                        qrContainer.innerHTML = '<div style="text-align: center; padding: 2rem;"><i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: var(--color-ochablue);"></i><br><p style="margin-top: 1rem;">Generando enlace seguro...</p></div>';
-                        
-                        document.getElementById('qrModal').classList.add('active');
-                        
-                        // Generate the real magic link using Supabase
-                        // Ensure 'contact.email' is a valid email and 'contactId' is correct
-                        const updateUrl = await generateRealMagicLink(contact.email, contactId);
-                        
-                        // Clear the container and create the QR
-                        qrContainer.innerHTML = '';
-                        
-                        const qrDiv = document.createElement('div');
-                        qrDiv.id = 'qrcode-canvas';
-                        qrDiv.style.display = 'flex';
-                        qrDiv.style.justifyContent = 'center';
-                        qrDiv.style.alignItems = 'center';
-                        qrContainer.appendChild(qrDiv);
-                        
-                        const qr = new QRCode(qrDiv, {
-                            text: updateUrl,
-                            width: 256,
-                            height: 256,
-                            colorDark: '#0072BC',
-                            colorLight: '#FFFFFF',
-                            correctLevel: QRCode.CorrectLevel.L
-                        });
-                        
-                        console.log('QR Code generated successfully with magic link:', updateUrl);
-                        
-                    } catch (error) {
-                        console.error('Error generating QR code:', error);
-                        const qrContainer = document.getElementById('qrcode');
-                        qrContainer.innerHTML = `
-                            <div style="text-align: center; padding: 2rem; color: #cd3a1f;">
-                                <i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 1rem;"></i>
-                                <p>Error al generar el código QR.</p>
-                                <p style="font-size: 0.9rem; margin-top: 0.5rem;">Por favor, intente de nuevo o recargue la página.</p>
-                                <p style="font-size: 0.8rem; margin-top: 0.5rem; color: #666;">Error: ${error.message}</p>
-                            </div>`;
-                    }
-                });
-            }
-
-            function downloadQR() {
-                try {
-                    const qrCanvas = document.querySelector('#qrcode-canvas canvas');
-                    if (qrCanvas) {
-                        const link = document.createElement('a');
-                        link.download = `qr-contact-${currentQRContactId}.png`;
-                        link.href = qrCanvas.toDataURL('image/png');
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                        showAppMessage('Código QR descargado exitosamente', 'success');
-                    } else {
-                        showAppMessage('No se encontró el código QR para descargar.', 'error');
-                    }
-                } catch (error) {
-                    console.error('Error downloading QR:', error);
-                    showAppMessage('Error al descargar el código QR: ' + error.message, 'error');
-                }
-            }
-            function closeQRModal() {
-                document.getElementById('qrModal').classList.remove('active');
-                const qrContainer = document.getElementById('qrcode');
-                qrContainer.innerHTML = ''; // Clear previous QR
-                currentQRContactId = null;
-            }
+        } catch (error) {
+            console.error('Error generando código QR:', error);
+            const qrContainer = document.getElementById('qrcode');
+            qrContainer.innerHTML = `
+                <div style="text-align: center; padding: 2rem; color: #cd3a1f;">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                    <p>Error al generar el código QR.</p>
+                    <p style="font-size: 0.9rem; margin-top: 0.5rem;">Por favor, intente de nuevo o recargue la página.</p>
+                    <p style="font-size: 0.8rem; margin-top: 0.5rem; color: #666;">Error: ${error.message}</p>
+                </div>`;
+        }
+    });
+}
+
+// Función auxiliar para generar el QR Code
+function generateQRCode(container, url) {
+    try {
+        // Limpiar el contenedor y crear el QR
+        container.innerHTML = '';
+        
+        const qrDiv = document.createElement('div');
+        qrDiv.id = 'qrcode-canvas';
+        qrDiv.style.display = 'flex';
+        qrDiv.style.justifyContent = 'center';
+        qrDiv.style.alignItems = 'center';
+        container.appendChild(qrDiv);
+        
+        const qr = new QRCode(qrDiv, {
+            text: url,
+            width: 256,
+            height: 256,
+            colorDark: '#0072BC',
+            colorLight: '#FFFFFF',
+            correctLevel: QRCode.CorrectLevel.L // Nivel bajo para permitir URLs más largas
+        });
+        
+        console.log('✅ Código QR generado exitosamente con magic link:', url);
+        
+    } catch (error) {
+        console.error('Error en generateQRCode:', error);
+        container.innerHTML = `
+            <div style="text-align: center; padding: 2rem; color: #cd3a1f;">
+                <i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                <p>Error al generar el código QR.</p>
+                <p style="font-size: 0.8rem; margin-top: 0.5rem; color: #666;">URL demasiado larga: ${error.message}</p>
+            </div>`;
+    }
+}
+
+function downloadQR() {
+    try {
+        const qrCanvas = document.querySelector('#qrcode-canvas canvas');
+        if (qrCanvas) {
+            const link = document.createElement('a');
+            link.download = `qr-contact-${currentQRContactId}.png`;
+            link.href = qrCanvas.toDataURL('image/png');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showAppMessage('Código QR descargado exitosamente', 'success');
+        } else {
+            showAppMessage('No se encontró el código QR para descargar.', 'error');
+        }
+    } catch (error) {
+        console.error('Error descargando QR:', error);
+        showAppMessage('Error al descargar el código QR: ' + error.message, 'error');
+    }
+}
+
+function closeQRModal() {
+    document.getElementById('qrModal').classList.remove('active');
+    const qrContainer = document.getElementById('qrcode');
+    qrContainer.innerHTML = ''; // Limpiar QR previo
+    currentQRContactId = null;
+}
         </script>
     </body>
 </html>
-
