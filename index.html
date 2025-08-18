@@ -1848,7 +1848,7 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label">Teléfono</label>
-                            <input type="tel" id="telefono" class="form-control" placeholder="+58 414-1234567">
+                            <input type="tel" id="Teléfono" class="form-control" placeholder="+58 414-1234567">
                         </div>
                         <div class="form-group form-grid-full">
                             <label class="form-label"><i class="fas fa-map-location-dot"></i> Espacio de Coordinación</label>
@@ -2069,7 +2069,7 @@
         ];
 
         const tiposOrganizacion = [
-            'ONG Nacional', 'ONG Internacional', 'AFP Naciones Unidas', 'Gobierno Local', 
+            'ONG Nacional', 'ONG Internacional','ONG Nacional', 'AFP Naciones Unidas', 'Gobierno Local', 
             'Gobierno Nacional', 'Organización Religiosa', 'Sector Privado', 
             'Academia', 'Red/Coalición', 'Otro'
         ];
@@ -2421,7 +2421,7 @@ function handleRealtimeUpdate(payload) {
                 const tr = document.createElement('tr');
                 
                 // Formatear teléfono para WhatsApp
-                const phoneForWhatsApp = formatPhoneForWhatsApp(contact.telefono);
+                const phoneForWhatsApp = formatPhoneForWhatsApp(contact.Teléfono);
                 const whatsappBtn = phoneForWhatsApp ? 
                     `<button class="action-btn action-btn-whatsapp" data-tooltip="WhatsApp" onclick="sendWhatsApp('${phoneForWhatsApp}')">
                         <i class="fab fa-whatsapp"></i>
@@ -2609,7 +2609,7 @@ function handleRealtimeUpdate(payload) {
                 punto_focal: get(['Punto Focal', 'Nombre Punto Focal']),
                 cargo: get(['Cargo', 'Puesto']),
                 email: get(['Email', 'Correo Electrónico']),
-                telefono: get(['Teléfono', 'Tel']),
+                Teléfono: get(['Teléfono', 'Tel']),
                 tipo_organizacion: get(['Tipo de Organización', 'Tipo Organización']),
                 reporta_345w: getBool(['Reporta en el 345W', '345W Report']),
                 socio_implementador: getBool(['Socio Implementador', 'Implementer Partner']),
@@ -2628,7 +2628,7 @@ function handleRealtimeUpdate(payload) {
                 'Punto Focal': contact.punto_focal,
                 'Cargo': contact.cargo,
                 'Email': contact.email,
-                'Teléfono': contact.telefono,
+                'Teléfono': contact.Teléfono,
                 'Tipo de Organización': contact.tipo_organizacion,
                 'Reporta en el 345W': contact.reporta_345w ? 'Sí' : 'No',
                 'Socio Implementador': contact.socio_implementador ? 'Sí' : 'No',
@@ -2673,7 +2673,7 @@ function handleRealtimeUpdate(payload) {
                 c.punto_focal || '', 
                 c.cargo || '', 
                 c.email || '', 
-                c.telefono || '', 
+                c.Teléfono || '', 
                 c.tipo_organizacion || '',
                 c.espacio_coordinacion || ''
             ]);
@@ -2944,7 +2944,7 @@ function handleRealtimeUpdate(payload) {
             ).filter(Boolean);
             
             const phones = selectedContactsArray
-                .map(contact => contact.telefono)
+                .map(contact => contact.Teléfono)
                 .filter(Boolean)
                 .map(formatPhoneForWhatsApp)
                 .filter(Boolean);
@@ -2997,7 +2997,7 @@ function handleRealtimeUpdate(payload) {
                 punto_focal: document.getElementById('punto_focal').value.trim(),
                 cargo: document.getElementById('cargo').value.trim(),
                 email: document.getElementById('email').value.trim().toLowerCase(),
-                telefono: document.getElementById('telefono').value.trim(),
+                Teléfono: document.getElementById('Teléfono').value.trim(),
                 tipo_organizacion: document.getElementById('tipo_organizacion').value.trim(),
                 espacio_coordinacion: selectedEspacios.join(', '),
                 sectores_concat: selectedSectores.join(', '),
@@ -3043,7 +3043,7 @@ function handleRealtimeUpdate(payload) {
                 <p><strong>Punto Focal:</strong> ${contact.punto_focal || 'N/A'}</p>
                 <p><strong>Cargo:</strong> ${contact.cargo || 'N/A'}</p>
                 <p><strong>Email:</strong> ${contact.email || 'N/A'}<i class="fas fa-copy copy-icon" title="Copiar email" onclick="copyToClipboard('${contact.email}', this)"></i></p>
-                <p><strong>Teléfono:</strong> ${contact.telefono || 'N/A'}</p>
+                <p><strong>Teléfono:</strong> ${contact.Teléfono || 'N/A'}</p>
                 <p><strong>Tipo de Organización:</strong> ${contact.tipo_organizacion || 'N/A'}</p>
                 <p><strong>Espacio de Coordinación:</strong> ${contact.espacio_coordinacion || 'N/A'}</p>
                 <hr>
@@ -3082,7 +3082,7 @@ function handleRealtimeUpdate(payload) {
             document.getElementById('punto_focal').value = contact.punto_focal || '';
             document.getElementById('cargo').value = contact.cargo || '';
             document.getElementById('email').value = contact.email || '';
-            document.getElementById('telefono').value = contact.telefono || '';
+            document.getElementById('Teléfono').value = contact.Teléfono || '';
             document.getElementById('tipo_organizacion').value = contact.tipo_organizacion || '';
             
             // Establecer checkboxes
@@ -3469,7 +3469,7 @@ function handleRealtimeUpdate(payload) {
                         contact.punto_focal,
                         contact.cargo,
                         contact.email,
-                        contact.telefono,
+                        contact.Teléfono,
                         contact.tipo_organizacion,
                         contact.espacio_coordinacion,
                         contact.sectores_concat,
@@ -3487,7 +3487,7 @@ function handleRealtimeUpdate(payload) {
                         contact.punto_focal,
                         contact.cargo,
                         contact.email,
-                        contact.telefono,
+                        contact.Teléfono,
                         contact.tipo_organizacion,
                         contact.espacio_coordinacion,
                         contact.sectores_concat,
