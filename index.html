@@ -2765,17 +2765,41 @@ function handleRealtimeUpdate(payload) {
             }
         }
 
-        function updateSelectionControls() {
-            const selectionControls = document.getElementById('selectionControls');
-            const selectionInfo = document.getElementById('selectionInfo');
+function updateSelectionControls() {
+    const selectionControls = document.getElementById('selectionControls');
+    const selectionInfo = document.getElementById('selectionInfo');
+    
+    if (selectedContacts.size > 0) {
+        selectionControls.classList.add('active');
+        selectionInfo.textContent = `${selectedContacts.size} contacto${selectedContacts.size > 1 ? 's' : ''} seleccionado${selectedContacts.size > 1 ? 's' : ''}`;
+        
+        // Actualizar los botones dinámicamente si no existen
+        updateSelectionButtons();
+    } else {
+        selectionControls.classList.remove('active');
+    }
+}
+
+function updateSelectionButtons() {
+    const selectionActions = document.querySelector('.selection-actions');
+    
+    // Verificar si ya existe el botón Magic Links
+    if (!document.getElementById('magicLinksBtn')) {
+        // Buscar el botón de WhatsApp para insertar antes
+        const whatsappBtn = selectionActions.querySelector('button[onclick="sendWhatsAppToSelection()"]');
+        
+        if (whatsappBtn) {
+            const magicLinksBtn = document.createElement('button');
+            magicLinksBtn.id = 'magicLinksBtn';
+            magicLinksBtn.className = 'btn btn-warning btn-sm';
+            magicLinksBtn.onclick = sendMassiveMagicLinks;
+            magicLinksBtn.innerHTML = '<i class="fas fa-magic"></i> Magic Links';
             
-            if (selectedContacts.size > 0) {
-                selectionControls.classList.add('active');
-                selectionInfo.textContent = `${selectedContacts.size} contacto${selectedContacts.size > 1 ? 's' : ''} seleccionado${selectedContacts.size > 1 ? 's' : ''}`;
-            } else {
-                selectionControls.classList.remove('active');
-            }
+            // Insertar antes del botón de WhatsApp
+            whatsappBtn.parentNode.insertBefore(magicLinksBtn, whatsappBtn);
         }
+    }
+}
 
         function clearSelection() {
             selectedContacts.clear();
@@ -3902,6 +3926,392 @@ Generado desde: Sistema de Contactos Sub Oficina OCHA Maracaibo
     URL.revokeObjectURL(url);
     
     showAppMessage(`📁 Archivo con ${emails.length} correos descargado`, 'success');
+}
+// ====== FUNCIONES PARA ENVÍO MASIVO DE MAGIC LINKS ======
+
+// Función principal para envío masivo de magic links
+function sendMassiveMagicLinks() {
+    if (selectedContacts.size === 0) {
+        showAppMessage('Seleccione al menos un contacto para enviar magic links', 'error');
+        return;
+    }
+    
+    const selectedContactsArray = Array.from(selectedContacts).map(id => 
+        contacts.find(c => c.id === id)
+    ).filter(Boolean);
+    
+    const contactsWithEmail = selectedContactsArray.filter(contact => contact.email);
+    
+    if (contactsWithEmail.length === 0) {
+        showAppMessage('Los contactos seleccionados no tienen correos válidos', 'warning');
+        return;
+    }
+    
+    showMagicLinkMassiveModal(contactsWithEmail);
+}
+
+function showMagicLinkMassiveModal(contactsWithEmail) {
+    const modal = document.createElement('div');
+    modal.className = 'modal active';
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    <i class="fas fa-magic"></i> Envío Masivo de Magic Links
+                </h3>
+                <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="email-notice">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Contactos seleccionados:</strong> ${contactsWithEmail.length} con correo válido.
+                    <br>Se generará un magic link personalizado para cada contacto.
+                </div>
+                
+                <!-- Vista previa de contactos -->
+                <div style="margin: 1.5rem 0;">
+                    <h5 style="color: var(--color-ochablue); margin-bottom: 1rem;">
+                        <i class="fas fa-users"></i> Contactos a procesar:
+                    </h5>
+                    <div style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; border-radius: 6px; padding: 1rem; background: #f8f9fa;">
+                        ${contactsWithEmail.map(contact => `
+                            <div style="margin-bottom: 0.5rem; font-size: 0.9rem;">
+                                <strong>${contact.organizacion}</strong> - ${contact.punto_focal}
+                                <br><small style="color: #666;">${contact.email}</small>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                
+                <!-- Opciones de envío -->
+                <div style="border: 1px solid var(--color-ochablue); border-radius: 8px; padding: 1.5rem; margin: 1.5rem 0;">
+                    <h5 style="color: var(--color-ochablue); margin-bottom: 1rem;">
+                        <i class="fas fa-cog"></i> Opciones de Envío
+                    </h5>
+                    
+                    <div style="margin-bottom: 1rem;">
+                        <label style="font-weight: 600; margin-bottom: 0.5rem; display: block;">
+                            Asunto del correo:
+                        </label>
+                        <input type="text" id="magicLinkSubject" class="form-control" 
+                               value="OCHA Maracaibo - Actualización de su información de contacto"
+                               style="margin-bottom: 1rem;">
+                    </div>
+                    
+                    <div style="margin-bottom: 1rem;">
+                        <label style="font-weight: 600; margin-bottom: 0.5rem; display: block;">
+                            Mensaje personalizado:
+                        </label>
+                        <textarea id="magicLinkMessage" class="form-control" rows="6" style="resize: vertical;">Estimado/a {PUNTO_FOCAL},
+
+Saludos desde la Sub Oficina OCHA Maracaibo.
+
+Le escribimos desde la organización {ORGANIZACION} para solicitar que actualice su información de contacto en nuestro directorio humanitario.
+
+Para actualizar su información de manera segura, haga clic en el siguiente enlace:
+
+{MAGIC_LINK}
+
+Este enlace es personalizado y seguro, válido por 24 horas.
+
+Gracias por su colaboración en mantener actualizada la información de coordinación humanitaria.
+
+Saludos cordiales,
+Sub Oficina OCHA Maracaibo
+jhozman.camacho@un.org</textarea>
+                        <small style="color: #666; font-size: 0.8rem;">
+                            Variables disponibles: {PUNTO_FOCAL}, {ORGANIZACION}, {MAGIC_LINK}
+                        </small>
+                    </div>
+                </div>
+                
+                <!-- Opciones de método de envío -->
+                <div style="border: 1px solid var(--ocha-green); border-radius: 8px; padding: 1.5rem;">
+                    <h5 style="color: var(--ocha-green); margin-bottom: 1rem;">
+                        <i class="fas fa-paper-plane"></i> Método de Envío
+                    </h5>
+                    
+                    <div style="display: grid; gap: 1rem;">
+                        <!-- Opción 1: Cliente de correo local -->
+                        <div style="border: 1px solid var(--color-ochablue); border-radius: 6px; padding: 1rem;">
+                            <h6 style="color: var(--color-ochablue); margin-bottom: 0.5rem;">
+                                <i class="fas fa-desktop"></i> Cliente de Correo Local (Recomendado)
+                            </h6>
+                            <p style="font-size: 0.9rem; margin-bottom: 1rem;">
+                                Genera correos individuales que se abren en su cliente de correo (Outlook, Apple Mail, etc.)
+                            </p>
+                            <button class="btn btn-primary" onclick="generateLocalEmails()">
+                                <i class="fas fa-envelope"></i> Generar Correos Locales
+                            </button>
+                        </div>
+                        
+                        <!-- Opción 2: Lista para envío manual -->
+                        <div style="border: 1px solid var(--color-ochagrey); border-radius: 6px; padding: 1rem;">
+                            <h6 style="color: var(--color-ochagrey); margin-bottom: 0.5rem;">
+                                <i class="fas fa-list"></i> Lista para Envío Manual
+                            </h6>
+                            <p style="font-size: 0.9rem; margin-bottom: 1rem;">
+                                Genera una lista con todos los correos y magic links para envío manual
+                            </p>
+                            <button class="btn btn-secondary" onclick="generateManualList()">
+                                <i class="fas fa-file-text"></i> Generar Lista Manual
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="magicLinkModalMessage" class="status-message" style="margin-top: 1rem;"></div>
+                <div id="magicLinkProgress" style="margin-top: 1rem; display: none;">
+                    <div style="background: var(--ocha-light-blue); border-radius: 6px; padding: 1rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                            <span id="progressText">Procesando...</span>
+                            <span id="progressCount">0/0</span>
+                        </div>
+                        <div style="background: #ddd; border-radius: 10px; height: 20px; overflow: hidden;">
+                            <div id="progressBar" style="background: var(--color-ochablue); height: 100%; width: 0%; transition: width 0.3s;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').remove()">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
+// Generar correos individuales para cliente local
+async function generateLocalEmails() {
+    const contactsWithEmail = Array.from(selectedContacts).map(id => 
+        contacts.find(c => c.id === id)
+    ).filter(contact => contact && contact.email);
+    
+    const subject = document.getElementById('magicLinkSubject').value;
+    const messageTemplate = document.getElementById('magicLinkMessage').value;
+    
+    showProgress(true, 'Generando magic links...', 0, contactsWithEmail.length);
+    
+    try {
+        const emailsToSend = [];
+        
+        for (let i = 0; i < contactsWithEmail.length; i++) {
+            const contact = contactsWithEmail[i];
+            updateProgress(i + 1, contactsWithEmail.length, `Generando magic link para ${contact.organizacion}...`);
+            
+            // Generar magic link
+            const magicLink = await generateRealMagicLink(contact.email, contact.id);
+            
+            // Personalizar mensaje
+            const personalizedMessage = messageTemplate
+                .replace(/{PUNTO_FOCAL}/g, contact.punto_focal || 'Estimado/a')
+                .replace(/{ORGANIZACION}/g, contact.organizacion || 'su organización')
+                .replace(/{MAGIC_LINK}/g, magicLink);
+            
+            emailsToSend.push({
+                email: contact.email,
+                subject: subject,
+                body: personalizedMessage,
+                contact: contact
+            });
+            
+            // Pequeña pausa para no sobrecargar
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+        showProgress(false);
+        
+        // Mostrar opciones de envío
+        showEmailSendOptions(emailsToSend);
+        
+    } catch (error) {
+        console.error('Error generando magic links:', error);
+        showMagicLinkMessage('Error generando magic links: ' + error.message, 'error');
+        showProgress(false);
+    }
+}
+
+function showEmailSendOptions(emailsToSend) {
+    const modalMessage = document.getElementById('magicLinkModalMessage');
+    modalMessage.innerHTML = `
+        <div style="background: var(--ocha-light-blue); border-radius: 6px; padding: 1.5rem;">
+            <h6 style="color: var(--color-ochablue); margin-bottom: 1rem;">
+                ✅ Magic Links Generados: ${emailsToSend.length} correos listos
+            </h6>
+            
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;">
+                <button class="btn btn-primary" onclick="sendEmailsBatch(${JSON.stringify(emailsToSend).replace(/"/g, '&quot;')}, 10)">
+                    <i class="fas fa-paper-plane"></i> Enviar de 10 en 10
+                </button>
+                <button class="btn btn-info" onclick="sendEmailsBatch(${JSON.stringify(emailsToSend).replace(/"/g, '&quot;')}, 5)">
+                    <i class="fas fa-paper-plane"></i> Enviar de 5 en 5
+                </button>
+                <button class="btn btn-warning" onclick="sendEmailsOneByOne(${JSON.stringify(emailsToSend).replace(/"/g, '&quot;')})">
+                    <i class="fas fa-paper-plane"></i> Uno por Uno
+                </button>
+            </div>
+            
+            <button class="btn btn-secondary" onclick="downloadEmailList(${JSON.stringify(emailsToSend).replace(/"/g, '&quot;')})">
+                <i class="fas fa-download"></i> Descargar Lista Completa
+            </button>
+        </div>
+    `;
+    modalMessage.className = 'status-message status-success';
+    modalMessage.style.display = 'block';
+}
+
+// Enviar correos en lotes
+function sendEmailsBatch(emailsToSend, batchSize) {
+    const batches = [];
+    for (let i = 0; i < emailsToSend.length; i += batchSize) {
+        batches.push(emailsToSend.slice(i, i + batchSize));
+    }
+    
+    showProgress(true, 'Abriendo clientes de correo...', 0, batches.length);
+    
+    batches.forEach((batch, index) => {
+        setTimeout(() => {
+            updateProgress(index + 1, batches.length, `Abriendo lote ${index + 1} de ${batches.length} (${batch.length} correos)`);
+            
+            batch.forEach((emailData, emailIndex) => {
+                setTimeout(() => {
+                    const subject = encodeURIComponent(emailData.subject);
+                    const body = encodeURIComponent(emailData.body);
+                    window.open(`mailto:${emailData.email}?subject=${subject}&body=${body}`);
+                }, emailIndex * 500); // 500ms entre cada correo del lote
+            });
+            
+            if (index === batches.length - 1) {
+                setTimeout(() => {
+                    showProgress(false);
+                    showMagicLinkMessage(`🎉 Completado: ${batches.length} lotes enviados con ${emailsToSend.length} correos total`, 'success');
+                }, batch.length * 500 + 1000);
+            }
+        }, index * (batchSize * 500 + 2000)); // Pausa entre lotes
+    });
+}
+
+// Enviar correos uno por uno
+function sendEmailsOneByOne(emailsToSend) {
+    showProgress(true, 'Enviando correos individuales...', 0, emailsToSend.length);
+    
+    emailsToSend.forEach((emailData, index) => {
+        setTimeout(() => {
+            updateProgress(index + 1, emailsToSend.length, `Enviando a ${emailData.contact.organizacion}...`);
+            
+            const subject = encodeURIComponent(emailData.subject);
+            const body = encodeURIComponent(emailData.body);
+            window.open(`mailto:${emailData.email}?subject=${subject}&body=${body}`);
+            
+            if (index === emailsToSend.length - 1) {
+                setTimeout(() => {
+                    showProgress(false);
+                    showMagicLinkMessage(`🎉 Todos los correos enviados: ${emailsToSend.length} magic links`, 'success');
+                }, 1000);
+            }
+        }, index * 2000); // 2 segundos entre cada correo
+    });
+}
+
+// Generar lista manual
+async function generateManualList() {
+    const contactsWithEmail = Array.from(selectedContacts).map(id => 
+        contacts.find(c => c.id === id)
+    ).filter(contact => contact && contact.email);
+    
+    const subject = document.getElementById('magicLinkSubject').value;
+    const messageTemplate = document.getElementById('magicLinkMessage').value;
+    
+    showProgress(true, 'Generando lista manual...', 0, contactsWithEmail.length);
+    
+    try {
+        let manualList = `LISTA DE MAGIC LINKS - OCHA MARACAIBO
+Fecha: ${new Date().toLocaleDateString('es-ES')}
+Total de contactos: ${contactsWithEmail.length}
+Asunto: ${subject}
+
+==========================================
+
+`;
+
+        for (let i = 0; i < contactsWithEmail.length; i++) {
+            const contact = contactsWithEmail[i];
+            updateProgress(i + 1, contactsWithEmail.length, `Procesando ${contact.organizacion}...`);
+            
+            const magicLink = await generateRealMagicLink(contact.email, contact.id);
+            const personalizedMessage = messageTemplate
+                .replace(/{PUNTO_FOCAL}/g, contact.punto_focal || 'Estimado/a')
+                .replace(/{ORGANIZACION}/g, contact.organizacion || 'su organización')
+                .replace(/{MAGIC_LINK}/g, magicLink);
+            
+            manualList += `${i + 1}. ${contact.organizacion} - ${contact.punto_focal}
+Email: ${contact.email}
+Magic Link: ${magicLink}
+
+Mensaje personalizado:
+${personalizedMessage}
+
+==========================================
+
+`;
+            
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+        showProgress(false);
+        
+        // Descargar lista
+        const blob = new Blob([manualList], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `magic_links_ocha_maracaibo_${new Date().toISOString().split('T')[0]}.txt`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        showMagicLinkMessage(`📁 Lista manual descargada con ${contactsWithEmail.length} magic links`, 'success');
+        
+    } catch (error) {
+        console.error('Error generando lista manual:', error);
+        showMagicLinkMessage('Error generando lista manual: ' + error.message, 'error');
+        showProgress(false);
+    }
+}
+
+// Funciones auxiliares
+function showProgress(show, text = '', current = 0, total = 0) {
+    const progressDiv = document.getElementById('magicLinkProgress');
+    if (show) {
+        progressDiv.style.display = 'block';
+        updateProgress(current, total, text);
+    } else {
+        progressDiv.style.display = 'none';
+    }
+}
+
+function updateProgress(current, total, text) {
+    const progressText = document.getElementById('progressText');
+    const progressCount = document.getElementById('progressCount');
+    const progressBar = document.getElementById('progressBar');
+    
+    if (progressText) progressText.textContent = text;
+    if (progressCount) progressCount.textContent = `${current}/${total}`;
+    if (progressBar) {
+        const percentage = total > 0 ? (current / total) * 100 : 0;
+        progressBar.style.width = `${percentage}%`;
+    }
+}
+
+function showMagicLinkMessage(message, type) {
+    const messageEl = document.getElementById('magicLinkModalMessage');
+    messageEl.textContent = message;
+    messageEl.className = `status-message status-${type}`;
+    messageEl.style.display = 'block';
 }
     </script>
 </body>
