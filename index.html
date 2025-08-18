@@ -1608,9 +1608,9 @@
 
                     <!-- Filtro de espacio de coordinación -->
                     <div class="form-group">
-                        <label class="form-label">Espacio de Coordinación</label>
+                        <label class="form-label">Grupo de Coordinación</label>
                         <select id="espacioFilter" class="filter-select">
-                            <option value="">Todos los espacios</option>
+                            <option value="">Todos los grupos</option>
                         </select>
                     </div>
 
@@ -1824,7 +1824,7 @@
                                 <option value="">Seleccionar tipo</option>
                                 <option value="ONG Nacional">ONG Nacional</option>
                                 <option value="ONG Internacional">ONG Internacional</option>
-                                <option value="Agencia UN">Agencia UN</option>
+                                <option value="AFP Naciones Unidas">AFP Naciones Unidas</option>
                                 <option value="Gobierno Local">Gobierno Local</option>
                                 <option value="Gobierno Nacional">Gobierno Nacional</option>
                                 <option value="Organización Religiosa">Organización Religiosa</option>
@@ -1851,7 +1851,7 @@
                             <input type="tel" id="Teléfono" class="form-control" placeholder="+58 414-1234567">
                         </div>
                         <div class="form-group form-grid-full">
-                            <label class="form-label"><i class="fas fa-map-location-dot"></i> Espacio de Coordinación</label>
+                            <label class="form-label"><i class="fas fa-map-location-dot"></i> Grupo de Coordinación</label>
                             <div class="multi-select-container">
                                 <div class="multi-select-list" id="espaciosMultiSelect"></div>
                             </div>
@@ -2049,9 +2049,9 @@
         const espaciosList = [
             'Foro Local de Coordinación Zulia',
             'Foro Local de Coordinación Falcón',
-            'Espacio de Coordinación Sur del Lago',
-            'Espacio de Coordinación Trujillo',
-            'Espacio de Coordinación Lara'
+            'Grupo de Coordinación Sur del Lago',
+            'Grupo de Coordinación Trujillo',
+            'Grupo de Coordinación Lara'
         ];
 
         const municipiosList = [
@@ -2286,7 +2286,7 @@ function handleRealtimeUpdate(payload) {
 
             // Filtro de espacios
             const espacioFilter = document.getElementById('espacioFilter');
-            espacioFilter.innerHTML = '<option value="">Todos los espacios</option>';
+            espacioFilter.innerHTML = '<option value="">Todos los grupos</option>';
             const availableSpaces = contacts.length > 0 
                 ? [...new Set(contacts.map(c => c.espacio_coordinacion).filter(Boolean))].sort()
                 : espaciosList; 
@@ -2915,23 +2915,34 @@ function handleRealtimeUpdate(payload) {
         }
 
         function sendEmailToSelection() {
-            if (selectedContacts.size === 0) {
-                showAppMessage('Seleccione al menos un contacto para enviar correo', 'error');
-                return;
-            }
-            
-            const selectedContactsArray = Array.from(selectedContacts).map(id => 
-                contacts.find(c => c.id === id)
-            ).filter(Boolean);
-            
-            const emails = selectedContactsArray.map(contact => contact.email).filter(Boolean);
-            const emailList = emails.join(';');
-            
-            const subject = encodeURIComponent('Comunicación OCHA Maracaibo');
-            const body = encodeURIComponent('Estimados colegas,\n\n\n\nSaludos cordiales,\nSub Oficina OCHA Maracaibo');
-            
-            window.open(`mailto:${emailList}?subject=${subject}&body=${body}`);
-        }
+    if (selectedContacts.size === 0) {
+        showAppMessage('Seleccione al menos un contacto para enviar correo', 'error');
+        return;
+    }
+    
+    const selectedContactsArray = Array.from(selectedContacts).map(id => 
+        contacts.find(c => c.id === id)
+    ).filter(Boolean);
+    
+    const emails = selectedContactsArray.map(contact => contact.email).filter(Boolean);
+    
+    if (emails.length === 0) {
+        showAppMessage('Los contactos seleccionados no tienen correos válidos', 'warning');
+        return;
+    }
+    
+    // Límite máximo: 70 correos
+    if (emails.length <= 70) {
+        const emailList = emails.join(';');
+        const subject = encodeURIComponent('Comunicación OCHA Maracaibo');
+        const body = encodeURIComponent('Estimados colegas,\n\n\n\nSaludos cordiales,\nSub Oficina OCHA Maracaibo');
+        window.open(`mailto:${emailList}?subject=${subject}&body=${body}`);
+        showAppMessage(`✅ Abriendo cliente de correo con ${emails.length} destinatarios`, 'success');
+    } else {
+        // Para más de 70 correos, mostrar modal para copiar
+        showEmailCopyModal(emails);
+    }
+}
 
         function sendWhatsAppToSelection() {
             if (selectedContacts.size === 0) {
@@ -3794,6 +3805,104 @@ function handleRealtimeUpdate(payload) {
             qrContainer.innerHTML = '';
             currentQRContactId = null;
         }
+		function showEmailCopyModal(emails) {
+    const modal = document.createElement('div');
+    modal.className = 'modal active';
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    <i class="fas fa-envelope"></i> Lista de Correos para Copiar
+                </h3>
+                <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="email-notice">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Lista grande:</strong> ${emails.length} correos electrónicos seleccionados.
+                    <br>El límite máximo para abrir directamente es 70 correos.
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; margin: 1.5rem 0 1rem;">
+                    <p><strong>Total de correos:</strong> ${emails.length}</p>
+                    <button class="btn btn-primary" onclick="copyEmailsFromModal()">
+                        <i class="fas fa-copy"></i> Copiar Todos
+                    </button>
+                </div>
+                
+                <p style="font-size: 0.9rem; color: var(--color-ochagrey); margin-bottom: 0.5rem;">
+                    Copie la siguiente lista y péguela en el campo "Para:" o "CCO:" de su cliente de correo:
+                </p>
+                <textarea id="emailListForCopy" class="form-control" rows="10" readonly 
+                          style="font-family: monospace; font-size: 0.85rem; resize: vertical;">${emails.join('; ')}</textarea>
+                
+                <div style="margin-top: 1rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+                    <button class="btn btn-success" onclick="openEmailClientEmpty()">
+                        <i class="fas fa-envelope"></i> Abrir Cliente de Correo
+                    </button>
+                    <button class="btn btn-info" onclick="downloadEmailList([${emails.map(e => `'${e}'`).join(',')}])">
+                        <i class="fas fa-download"></i> Descargar Lista
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').remove()">
+                    <i class="fas fa-times"></i> Cerrar
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
+function copyEmailsFromModal() {
+    const textarea = document.getElementById('emailListForCopy');
+    textarea.select();
+    textarea.setSelectionRange(0, 99999); // Para móviles
+    
+    navigator.clipboard.writeText(textarea.value).then(() => {
+        showAppMessage('📋 Lista de correos copiada al portapapeles', 'success');
+    }).catch(() => {
+        // Fallback para navegadores antiguos
+        document.execCommand('copy');
+        showAppMessage('📋 Lista copiada (seleccione el texto si no funcionó)', 'info');
+    });
+}
+
+function openEmailClientEmpty() {
+    const subject = encodeURIComponent('Comunicación OCHA Maracaibo');
+    const body = encodeURIComponent('Estimados colegas,\n\n\n\nSaludos cordiales,\nSub Oficina OCHA Maracaibo');
+    window.open(`mailto:?subject=${subject}&body=${body}`);
+    showAppMessage('📧 Cliente de correo abierto. Pegue la lista en el campo "Para:" o "CCO:"', 'info');
+}
+
+function downloadEmailList(emails) {
+    const content = `Lista de Correos Electrónicos - OCHA Maracaibo
+Fecha: ${new Date().toLocaleDateString('es-ES')}
+Total de correos: ${emails.length}
+
+=== PARA COPIAR Y PEGAR ===
+${emails.join('; ')}
+
+=== LISTA LÍNEA POR LÍNEA ===
+${emails.join('\n')}
+
+Generado desde: Sistema de Contactos Sub Oficina OCHA Maracaibo
+`;
+
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `correos_ocha_maracaibo_${new Date().toISOString().split('T')[0]}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    showAppMessage(`📁 Archivo con ${emails.length} correos descargado`, 'success');
+}
     </script>
 </body>
 </html>
