@@ -2209,58 +2209,63 @@
                 });
         }
 function handleRealtimeUpdate(payload) {
-            console.log('Actualización en tiempo real:', payload);
-            let changed = false;
-            
-            if (payload.eventType === 'INSERT') {
-                const existing = contacts.find(c => c.id === payload.new.id);
-                if (!existing) {
-                    contacts.push(payload.new);
-                    changed = true;
-                }
-            } else if (payload.eventType === 'UPDATE') {
-                const index = contacts.findIndex(c => c.id === payload.new.id);
-                if (index > -1) {
-                    contacts[index] = {...contacts[index], ...payload.new};
-                    changed = true;
-                } else {
-                    contacts.push(payload.new);
-                    changed = true;
-                }
-            } else if (payload.eventType === 'DELETE') {
-                const oldLength = contacts.length;
-                contacts = contacts.filter(c => c.id !== payload.old.id);
-                if (contacts.length !== oldLength) changed = true;
-            }
-            
-            if (changed) {
-                setupDynamicFilters();
-                applyFilters();
-            }
+    console.log('Actualización en tiempo real:', payload);
+    let changed = false;
+    
+    if (payload.eventType === 'INSERT') {
+        const existing = contacts.find(c => c.id === payload.new.id);
+        if (!existing) {
+            contacts.push(payload.new);
+            changed = true;
         }
-
-        function setupFilters() {
-            // Filtro de sectores (Grilla de iconos en la barra lateral)
-            const sectorsGrid = document.getElementById('sectorsGrid');
-            sectorsGrid.innerHTML = '';
-            
-            sectoresList.forEach(sector => {
-                const div = document.createElement('div');
-                div.className = 'icon-item';
-                div.dataset.sector = sector;
-                div.onclick = () => toggleSectorFilter(sector);
-                
-                const iconUrl = sectorIcons[sector] || sectorIcons['Coordinación'];
-                div.innerHTML = `
-                    <img src="${iconUrl}" alt="${sector}" class="sector-icon" onerror="this.src='${sectorIcons['Coordinación']}'; this.onerror=null;">
-                    <div class="sector-name">${sector.split(' ').slice(0, 2).join(' ')}</div>
-                `;
-                sectorsGrid.appendChild(div);
-            });
-
-            // Configurar filtros dinámicos
-            setupDynamicFilters();
+    } else if (payload.eventType === 'UPDATE') {
+        const index = contacts.findIndex(c => c.id === payload.new.id);
+        if (index > -1) {
+            contacts[index] = {...contacts[index], ...payload.new};
+            changed = true;
+        } else {
+            contacts.push(payload.new);
+            changed = true;
         }
+    } else if (payload.eventType === 'DELETE') {
+        const oldLength = contacts.length;
+        contacts = contacts.filter(c => c.id !== payload.old.id);
+        if (contacts.length !== oldLength) changed = true;
+    }
+    
+if (changed) {
+    setupDynamicFilters();
+    applyFilters();
+}
+}
+
+function setupFilters() {
+    // Configurar filtros dinámicos primero
+    setupDynamicFilters();
+    
+    // Filtro de sectores (Grilla de iconos en la barra lateral) - SIEMPRE LOS 10 FIJOS
+    setupSectorIcons();
+}
+
+function setupSectorIcons() {
+    const sectorsGrid = document.getElementById('sectorsGrid');
+    sectorsGrid.innerHTML = '';
+    
+    // Usar solo los sectores predefinidos (10 sectores fijos)
+    sectoresList.forEach(sector => {
+        const div = document.createElement('div');
+        div.className = 'icon-item';
+        div.dataset.sector = sector;
+        div.onclick = () => toggleSectorFilter(sector);
+        
+        const iconUrl = sectorIcons[sector] || sectorIcons['Coordinación'];
+        div.innerHTML = `
+            <img src="${iconUrl}" alt="${sector}" class="sector-icon" onerror="this.src='${sectorIcons['Coordinación']}'; this.onerror=null;">
+            <div class="sector-name">${sector.split(' ').slice(0, 2).join(' ')}</div>
+        `;
+        sectorsGrid.appendChild(div);
+    });
+}
 
         function setupDynamicFilters() {
             // Filtro de tipos de organización
@@ -3543,24 +3548,60 @@ function updateSelectionButtons() {
                 // Filtro de espacio
                 if (activeFilters.espacio && contact.espacio_coordinacion !== activeFilters.espacio) return false;
                 
-                // Filtro de sectores
-                if (activeFilters.sectores.length > 0) {
-                    const contactSectores = (contact.sectores_concat || '').toLowerCase();
-                    const hasMatchingSector = activeFilters.sectores.some(sector => 
-                        contactSectores.includes(sector.toLowerCase())
-                    );
-                    if (!hasMatchingSector) return false;
-                }
+// Filtro de sectores - CORREGIDO PARA DATOS REALES
+if (activeFilters.sectores.length > 0) {
+    const contactSectoresString = (contact.sectores_concat || '').toLowerCase();
+    const hasMatchingSector = activeFilters.sectores.some(sector => {
+        const sectorLower = sector.toLowerCase();
+        
+        // Manejar casos específicos según los datos reales
+        if (sectorLower.includes('agua')) {
+            return contactSectoresString.includes('agua saneamiento e higiene') || 
+                   contactSectoresString.includes('agua');
+        }
+        if (sectorLower.includes('alojamiento')) {
+            return contactSectoresString.includes('alojamiento energia y enseres') || 
+                   contactSectoresString.includes('alojamiento');
+        }
+        if (sectorLower.includes('coordinación')) {
+            return contactSectoresString.includes('coordinacion');
+        }
+        if (sectorLower.includes('educación')) {
+            return contactSectoresString.includes('educacion');
+        }
+        if (sectorLower.includes('nutrición')) {
+            return contactSectoresString.includes('nutricion');
+        }
+        if (sectorLower.includes('protección general')) {
+            return contactSectoresString.includes('proteccion general');
+        }
+        if (sectorLower.includes('protección niños')) {
+            return contactSectoresString.includes('proteccion ninos ninas adolescentes');
+        }
+        if (sectorLower.includes('violencia de género')) {
+            return contactSectoresString.includes('proteccion violencia de genero');
+        }
+        if (sectorLower.includes('salud')) {
+            return contactSectoresString.includes('salud');
+        }
+        if (sectorLower.includes('seguridad alimentaria')) {
+            return contactSectoresString.includes('seguridad alimentaria');
+        }
+        
+        // Búsqueda genérica como respaldo
+        return contactSectoresString.includes(sectorLower);
+    });
+    if (!hasMatchingSector) return false;
+}
                 
                 // Filtro de municipios
-                if (activeFilters.municipios.length > 0) {
-                    const contactMunicipios = (contact.municipios_concat || '').toLowerCase();
-                    const hasMatchingMunicipio = activeFilters.municipios.some(municipio => 
-                        contactMunicipios.includes(municipio.toLowerCase())
-                    );
-                    if (!hasMatchingMunicipio) return false;
-                }
-                
+if (activeFilters.municipios.length > 0) {
+    const contactMunicipios = (contact.municipios_concat || '').split(',').map(m => m.trim().toLowerCase());
+    const hasMatchingMunicipio = activeFilters.municipios.some(municipio => 
+        contactMunicipios.includes(municipio.toLowerCase())
+    );
+    if (!hasMatchingMunicipio) return false;
+}
                 return true;
             });
             
@@ -3609,26 +3650,64 @@ function updateSelectionButtons() {
             const kpiGrid = document.getElementById('kpiGrid');
             kpiGrid.innerHTML = '';
             
-            const orgs = new Set(filteredContacts.map(c => c.organizacion).filter(Boolean));
-            const uniqueEspacios = new Set(filteredContacts.map(c => c.espacio_coordinacion).filter(Boolean));
-            
-            // Mejorado: contar sectores únicos con máximo de 10 (incluyendo Coordinación)
-            const uniqueSectores = new Set();
-            filteredContacts.forEach(c => {
-                if (c.sectores_concat) {
-                    c.sectores_concat.split(',').forEach(s => {
-                        const sector = s.trim();
-                        if (sector && sectoresList.includes(sector)) {
-                            uniqueSectores.add(sector);
-                        }
-                    });
-                }
-            });
+ const orgs = new Set(filteredContacts.map(c => c.organizacion).filter(Boolean));
+const uniqueEspacios = new Set(filteredContacts.map(c => c.espacio_coordinacion).filter(Boolean));
 
-            createKPICard(kpiGrid, { icon: 'fa-users', value: filteredContacts.length, label: 'Total Contactos' });
-            createKPICard(kpiGrid, { icon: 'fa-building', value: orgs.size, label: 'Organizaciones' });
-            createKPICard(kpiGrid, { icon: 'fa-map-marker-alt', value: uniqueEspacios.size, label: 'Espacios Coord.' });
-            createKPICard(kpiGrid, { icon: 'fa-th-list', value: Math.min(uniqueSectores.size, 10), label: 'Sectores Activos' });
+// Contar sectores usando la misma lógica del filtro
+const sectoresEnUso = new Set();
+sectoresList.forEach(sectorPredefinido => {
+    const sectorEncontrado = filteredContacts.some(contact => {
+        if (!contact.sectores_concat) return false;
+        
+        const contactSectoresString = contact.sectores_concat.toLowerCase();
+        const sectorLower = sectorPredefinido.toLowerCase();
+        
+        // Usar la misma lógica exacta que el filtro
+        if (sectorLower.includes('agua')) {
+            return contactSectoresString.includes('agua saneamiento e higiene') || 
+                   contactSectoresString.includes('agua');
+        }
+        if (sectorLower.includes('alojamiento')) {
+            return contactSectoresString.includes('alojamiento energia y enseres') || 
+                   contactSectoresString.includes('alojamiento');
+        }
+        if (sectorLower.includes('coordinación')) {
+            return contactSectoresString.includes('coordinacion');
+        }
+        if (sectorLower.includes('educación')) {
+            return contactSectoresString.includes('educacion');
+        }
+        if (sectorLower.includes('nutrición')) {
+            return contactSectoresString.includes('nutricion');
+        }
+        if (sectorLower.includes('protección general')) {
+            return contactSectoresString.includes('proteccion general');
+        }
+        if (sectorLower.includes('protección niños')) {
+            return contactSectoresString.includes('proteccion ninos ninas adolescentes');
+        }
+        if (sectorLower.includes('violencia de género')) {
+            return contactSectoresString.includes('proteccion violencia de genero');
+        }
+        if (sectorLower.includes('salud')) {
+            return contactSectoresString.includes('salud');
+        }
+        if (sectorLower.includes('seguridad alimentaria')) {
+            return contactSectoresString.includes('seguridad alimentaria');
+        }
+        
+        // Búsqueda genérica como respaldo
+        return contactSectoresString.includes(sectorLower);
+    });
+    
+    if (sectorEncontrado) {
+        sectoresEnUso.add(sectorPredefinido);
+    }
+});
+createKPICard(kpiGrid, { icon: 'fa-users', value: filteredContacts.length, label: 'Total Contactos' });
+createKPICard(kpiGrid, { icon: 'fa-building', value: orgs.size, label: 'Organizaciones' });
+createKPICard(kpiGrid, { icon: 'fa-map-marker-alt', value: uniqueEspacios.size, label: 'Espacios Coord.' });
+createKPICard(kpiGrid, { icon: 'fa-th-list', value: sectoresEnUso.size, label: 'Sectores Activos' });
         }
 
         function createKPICard(container, data) {
