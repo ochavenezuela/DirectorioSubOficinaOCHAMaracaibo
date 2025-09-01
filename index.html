@@ -3594,35 +3594,23 @@ async function saveGroup() {
         }
 
     window.addEventListener('DOMContentLoaded', () => {
-    console.log('🔍 DOMContentLoaded ejecutado');
-    console.log('🔍 URL actual:', window.location.href);
-    
     setupAuthEventListeners();
     
-    // Verificar si es registro público
+    // NUEVO: Verificar si es registro público
     const urlParams = new URLSearchParams(window.location.search);
-    console.log('🔍 Parámetros URL:', Object.fromEntries(urlParams));
-    
-    const publicRegister = urlParams.get('public_register');
-    console.log('🔍 public_register value:', publicRegister, typeof publicRegister);
-    
-    if (publicRegister) {
-        console.log('✅ Detectado registro público, mostrando formulario');
+    if (urlParams.get('public_register') === 'true') {
         showPublicRegistration();
         return;
     }
     
-    console.log('❌ No se detectó registro público, continuando con login normal');
-    
-    // Código original
-    supabase.auth.getSession().then(({ data: session }) => {
-        if (session && session.user) {
-            currentUser = session.user;
-            showMainApp();
-        } else {
-            showLoginPage();
-        }
-    });
+    // Código original sin cambios
+    const { data: session } = supabase.auth.getSession();
+    if (session && session.user) {
+        currentUser = session.user;
+        showMainApp();
+    } else {
+        showLoginPage();
+    }
 });
 
         supabase.auth.onAuthStateChange(async (event, session) => {
