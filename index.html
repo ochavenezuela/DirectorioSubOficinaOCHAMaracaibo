@@ -3594,30 +3594,22 @@ async function saveGroup() {
         }
 
 window.addEventListener('DOMContentLoaded', () => {
-    setupAuthEventListeners();
-    
-    // PRIMERO: Verificar si es registro público (antes que cualquier otra cosa)
+    // PRIMERO: Verificar registro público ANTES de hacer CUALQUIER otra cosa
     const urlParams = new URLSearchParams(window.location.search);
-    const currentUrl = window.location.href;
     
-    console.log('🔍 Verificando registro público...');
-    console.log('🔍 URL:', currentUrl);
-    console.log('🔍 Parámetros:', Object.fromEntries(urlParams));
+    console.log('🔍 URL completa:', window.location.href);
+    console.log('🔍 Parámetros URL:', Object.fromEntries(urlParams));
     
-    // Verificar de múltiples maneras
-    if (urlParams.get('public_register') === 'true' || 
-        urlParams.get('public_register') === true || 
-        currentUrl.includes('public_register=true') ||
-        urlParams.has('public_register')) {
-        
-        console.log('✅ Registro público detectado - Mostrando formulario');
+    if (urlParams.has('public_register')) {
+        console.log('✅ Registro público detectado');
         showPublicRegistration();
-        return;
+        return; // SALIR COMPLETAMENTE - no hacer nada más
     }
     
-    console.log('❌ No es registro público - Continuando con autenticación normal');
+    // Solo si NO es registro público, continuar con autenticación
+    console.log('❌ No es registro público - Continuando con autenticación');
+    setupAuthEventListeners();
     
-    // SEGUNDO: Solo si no es registro público, verificar sesión
     supabase.auth.getSession().then(({ data: session }) => {
         if (session && session.user) {
             currentUser = session.user;
@@ -3627,7 +3619,6 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
-
         supabase.auth.onAuthStateChange(async (event, session) => {
             console.log('Evento de autenticación:', event, session);
             const previousUser = currentUser;
