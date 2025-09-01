@@ -3593,24 +3593,39 @@ async function saveGroup() {
             }, 5000);
         }
 
-    window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', () => {
     setupAuthEventListeners();
     
-    // NUEVO: Verificar si es registro público
+    // PRIMERO: Verificar si es registro público (antes que cualquier otra cosa)
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('public_register') === 'true') {
+    const currentUrl = window.location.href;
+    
+    console.log('🔍 Verificando registro público...');
+    console.log('🔍 URL:', currentUrl);
+    console.log('🔍 Parámetros:', Object.fromEntries(urlParams));
+    
+    // Verificar de múltiples maneras
+    if (urlParams.get('public_register') === 'true' || 
+        urlParams.get('public_register') === true || 
+        currentUrl.includes('public_register=true') ||
+        urlParams.has('public_register')) {
+        
+        console.log('✅ Registro público detectado - Mostrando formulario');
         showPublicRegistration();
         return;
     }
     
-    // Código original sin cambios
-    const { data: session } = supabase.auth.getSession();
-    if (session && session.user) {
-        currentUser = session.user;
-        showMainApp();
-    } else {
-        showLoginPage();
-    }
+    console.log('❌ No es registro público - Continuando con autenticación normal');
+    
+    // SEGUNDO: Solo si no es registro público, verificar sesión
+    supabase.auth.getSession().then(({ data: session }) => {
+        if (session && session.user) {
+            currentUser = session.user;
+            showMainApp();
+        } else {
+            showLoginPage();
+        }
+    });
 });
 
         supabase.auth.onAuthStateChange(async (event, session) => {
@@ -4993,8 +5008,6 @@ let currentNewUserData = null;
 
 function showNewUserMagicLinkModal() {
     document.getElementById('newUserMagicLinkModal').classList.add('active');
-    document.getElementById('newUserEmail').value = '';
-    document.getElementById('newUserOrganization').value = '';
     document.getElementById('newUserLinkResult').style.display = 'none';
     document.getElementById('newUserQRContainer').style.display = 'none';
     clearNewUserMessage();
@@ -5142,31 +5155,89 @@ function showPublicRegistration() {
     publicRegisterDiv.id = 'publicRegister';
     publicRegisterDiv.innerHTML = `
         <div class="login-container">
-            <div class="login-box" style="max-width: 600px;">
+            <div class="login-box" style="max-width: 800px;">
                 <div class="login-logo">
                     <img src="https://images4.imagebam.com/f2/74/67/MEZQJH3_o.PNG" alt="OCHA Logo">
                 </div>
-                <h2 class="login-main-title">Registro de Contacto</h2>
-                <h3 class="login-form-title">Complete su información</h3>
+                <h2 class="login-main-title">Registro de Contacto Humanitario</h2>
+                <h3 class="login-form-title">Complete toda su información</h3>
                 
                 <form id="publicRegisterForm">
-                    <div class="form-group">
-                        <label class="form-label">Organización *</label>
-                        <input type="text" id="pub_organizacion" class="form-control" required>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Organización *</label>
+                            <input type="text" id="pub_organizacion" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Siglas</label>
+                            <input type="text" id="pub_siglas" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Tipo de Organización</label>
+                            <select id="pub_tipo_organizacion" class="form-control">
+                                <option value="">Seleccionar tipo</option>
+                                <option value="ONG Nacional">ONG Nacional</option>
+                                <option value="ONG Local">ONG Local</option>
+                                <option value="ONG Internacional">ONG Internacional</option>
+                                <option value="AFP Naciones Unidas">AFP Naciones Unidas</option>
+                                <option value="Gobierno Local">Gobierno Local</option>
+                                <option value="Gobierno Nacional">Gobierno Nacional</option>
+                                <option value="Organización Religiosa">Organización Religiosa</option>
+                                <option value="Sector Privado">Sector Privado</option>
+                                <option value="Academia">Academia</option>
+                                <option value="Red/Coalición">Red/Coalición</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Punto Focal *</label>
+                            <input type="text" id="pub_punto_focal" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Cargo</label>
+                            <input type="text" id="pub_cargo" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Email *</label>
+                            <input type="email" id="pub_email" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Teléfono</label>
+                            <input type="tel" id="pub_telefono" class="form-control" placeholder="+58 414-1234567">
+                        </div>
+                        <div class="form-group form-grid-full">
+                            <label class="form-label">Grupo de Coordinación</label>
+                            <div id="pub_espaciosMultiSelect" class="multi-select-list"></div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Punto Focal *</label>
-                        <input type="text" id="pub_punto_focal" class="form-control" required>
+                    
+                    <h4 style="color: var(--color-ochablue); margin: 1.5rem 0 1rem;">Sectores</h4>
+                    <div id="pub_sectoresMultiSelect" class="multi-select-list"></div>
+                    
+                    <h4 style="color: var(--color-ochablue); margin: 1.5rem 0 1rem;">Municipios</h4>
+                    <div id="pub_municipiosMultiSelect" class="multi-select-list"></div>
+                    
+                    <h4 style="color: var(--color-ochablue); margin: 1.5rem 0 1rem;">Participación</h4>
+                    <div class="checkbox-grid">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="pub_reporta_345w">
+                            <label for="pub_reporta_345w">Reporta en el 345W</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="pub_socio_implementador">
+                            <label for="pub_socio_implementador">Socio Implementador</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="pub_organizacion_lider">
+                            <label for="pub_organizacion_lider">Organización Líder</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="pub_participacion_flc">
+                            <label for="pub_participacion_flc">Participación FLC</label>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Email *</label>
-                        <input type="email" id="pub_email" class="form-control" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Teléfono</label>
-                        <input type="tel" id="pub_telefono" class="form-control">
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-block">
+                    
+                    <button type="submit" class="btn btn-primary btn-block" style="margin-top: 2rem;">
                         <i class="fas fa-save"></i> Registrar Contacto
                     </button>
                 </form>
@@ -5177,25 +5248,103 @@ function showPublicRegistration() {
     `;
     
     document.body.appendChild(publicRegisterDiv);
+    
+    // Configurar las listas de selección múltiple
+    setupPublicMultiSelectLists();
+    
     document.getElementById('publicRegisterForm').addEventListener('submit', handlePublicRegistration);
+}
+
+function setupPublicMultiSelectLists() {
+    // Sectores
+    const sectoresContainer = document.getElementById('pub_sectoresMultiSelect');
+    sectoresContainer.innerHTML = '';
+    sectoresList.forEach(sector => {
+        const div = document.createElement('div');
+        div.className = 'multi-select-item';
+        div.innerHTML = `
+            <input type="checkbox" id="pub_sector_${sector.replace(/[^a-zA-Z0-9]/g, '_')}" value="${sector}">
+            <label for="pub_sector_${sector.replace(/[^a-zA-Z0-9]/g, '_')}">${sector}</label>
+        `;
+        sectoresContainer.appendChild(div);
+    });
+
+    // Municipios
+    const municipiosContainer = document.getElementById('pub_municipiosMultiSelect');
+    municipiosContainer.innerHTML = '';
+    municipiosList.forEach(municipio => {
+        const div = document.createElement('div');
+        div.className = 'multi-select-item';
+        div.innerHTML = `
+            <input type="checkbox" id="pub_municipio_${municipio.replace(/[^a-zA-Z0-9]/g, '_')}" value="${municipio}">
+            <label for="pub_municipio_${municipio.replace(/[^a-zA-Z0-9]/g, '_')}">${municipio}</label>
+        `;
+        municipiosContainer.appendChild(div);
+    });
+
+    // Espacios
+    const espaciosContainer = document.getElementById('pub_espaciosMultiSelect');
+    espaciosContainer.innerHTML = '';
+    espaciosList.forEach(espacio => {
+        const div = document.createElement('div');
+        div.className = 'multi-select-item';
+        div.innerHTML = `
+            <input type="checkbox" id="pub_espacio_${espacio.replace(/[^a-zA-Z0-9]/g, '_')}" value="${espacio}">
+            <label for="pub_espacio_${espacio.replace(/[^a-zA-Z0-9]/g, '_')}">${espacio}</label>
+        `;
+        espaciosContainer.appendChild(div);
+    });
 }
 
 async function handlePublicRegistration(e) {
     e.preventDefault();
     
+    // Recopilar sectores seleccionados
+    const selectedSectores = [];
+    document.querySelectorAll('#pub_sectoresMultiSelect input[type="checkbox"]:checked').forEach(checkbox => {
+        selectedSectores.push(checkbox.value);
+    });
+    
+    // Recopilar municipios seleccionados
+    const selectedMunicipios = [];
+    document.querySelectorAll('#pub_municipiosMultiSelect input[type="checkbox"]:checked').forEach(checkbox => {
+        selectedMunicipios.push(checkbox.value);
+    });
+    
+    // Recopilar espacios seleccionados
+    const selectedEspacios = [];
+    document.querySelectorAll('#pub_espaciosMultiSelect input[type="checkbox"]:checked').forEach(checkbox => {
+        selectedEspacios.push(checkbox.value);
+    });
+    
     const contactData = {
         organizacion: document.getElementById('pub_organizacion').value.trim(),
+        siglas: document.getElementById('pub_siglas').value.trim(),
         punto_focal: document.getElementById('pub_punto_focal').value.trim(),
+        cargo: document.getElementById('pub_cargo').value.trim(),
         email: document.getElementById('pub_email').value.trim().toLowerCase(),
-        Teléfono: document.getElementById('pub_telefono').value.trim()
+        Teléfono: document.getElementById('pub_telefono').value.trim(),
+        tipo_organizacion: document.getElementById('pub_tipo_organizacion').value.trim(),
+        espacio_coordinacion: selectedEspacios.join(', '),
+        sectores_concat: selectedSectores.join(', '),
+        municipios_concat: selectedMunicipios.join(', '),
+        reporta_345w: document.getElementById('pub_reporta_345w').checked,
+        socio_implementador: document.getElementById('pub_socio_implementador').checked,
+        organizacion_lider: document.getElementById('pub_organizacion_lider').checked,
+        participacion_flc: document.getElementById('pub_participacion_flc').checked,
+        is_public_registration: true // Marcador para identificar registros públicos
     };
     
     try {
-        const { error } = await supabase.from('contacts').insert([contactData]);
+        // Usar una función especial que omita RLS para registros públicos
+        const { data, error } = await supabase.functions.invoke('public-contact-registration', {
+            body: contactData
+        });
+        
         if (error) throw error;
         
         const messageEl = document.getElementById('publicRegisterMessage');
-        messageEl.textContent = '¡Contacto registrado exitosamente!';
+        messageEl.textContent = '¡Contacto registrado exitosamente! Su información ha sido enviada para revisión.';
         messageEl.className = 'status-message status-success';
         messageEl.style.display = 'block';
         
@@ -5203,10 +5352,25 @@ async function handlePublicRegistration(e) {
         
     } catch (error) {
         console.error('Error registrando contacto:', error);
-        const messageEl = document.getElementById('publicRegisterMessage');
-        messageEl.textContent = 'Error al registrar: ' + error.message;
-        messageEl.className = 'status-message status-error';
-        messageEl.style.display = 'block';
+        
+        // Fallback: Intentar inserción directa (puede fallar por RLS)
+        try {
+            const { error: directError } = await supabase.from('contacts').insert([contactData]);
+            if (directError) throw directError;
+            
+            const messageEl = document.getElementById('publicRegisterMessage');
+            messageEl.textContent = '¡Contacto registrado exitosamente!';
+            messageEl.className = 'status-message status-success';
+            messageEl.style.display = 'block';
+            
+            document.getElementById('publicRegisterForm').style.display = 'none';
+        } catch (fallbackError) {
+            console.error('Error en fallback:', fallbackError);
+            const messageEl = document.getElementById('publicRegisterMessage');
+            messageEl.textContent = 'Error al registrar: ' + (fallbackError.message || 'Problema de permisos. Contacte al administrador.');
+            messageEl.className = 'status-message status-error';
+            messageEl.style.display = 'block';
+        }
     }
 }
     </script>
