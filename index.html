@@ -1792,6 +1792,9 @@
                             <button class="btn btn-warning" onclick="document.getElementById('importFile').click()">
                                 <i class="fas fa-upload"></i> <span class="btn-text">Importar</span>
                             </button>
+			<button class="btn btn-info" onclick="showNewUserMagicLinkModal()">
+    <i class="fas fa-link"></i> <span class="btn-text">Enlace Público</span>
+</button>
                         </div>
                     </div>
                     
@@ -2109,7 +2112,65 @@
         </div>
     </div>
 </div>
+<!-- New User Magic Link Modal -->
+<div id="newUserMagicLinkModal" class="modal">
+    <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-header">
+<h3 class="modal-title">
+    <i class="fas fa-link"></i> Enlace Público de Registro
+</h3>
+            <button class="modal-close" onclick="closeNewUserMagicLinkModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+<div class="email-notice">
+    <i class="fas fa-info-circle"></i>
+    <strong>Enlace público:</strong> Genere un enlace que cualquier persona puede usar para registrarse como nuevo contacto en el sistema.
+</div>
 
+<div class="form-group">
+    <label class="form-label">Descripción del enlace (opcional)</label>
+    <input type="text" id="linkDescription" class="form-control" placeholder="Ej: Registro para organizaciones del sector salud">
+</div>
+            
+            <div id="newUserLinkResult" style="display: none; margin-top: 1.5rem;">
+                <h5 style="color: var(--color-ochablue); margin-bottom: 1rem;">
+                    <i class="fas fa-check-circle"></i> Enlace Generado
+                </h5>
+                <div style="background: var(--ocha-light-blue); border-radius: 6px; padding: 1rem; margin-bottom: 1rem;">
+                    <p style="margin-bottom: 0.5rem;"><strong>Para:</strong> <span id="generatedForEmail"></span></p>
+                    <textarea id="generatedMagicLink" class="form-control" rows="3" readonly style="font-family: monospace; font-size: 0.85rem;"></textarea>
+                </div>
+                
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;">
+                    <button class="btn btn-primary" onclick="copyNewUserLink()">
+                        <i class="fas fa-copy"></i> Copiar Enlace
+                    </button>
+                    <button class="btn btn-success" onclick="sendNewUserEmail()">
+                        <i class="fas fa-envelope"></i> Enviar por Correo
+                    </button>
+                    <button class="btn btn-warning" onclick="showNewUserQR()">
+                        <i class="fas fa-qrcode"></i> Generar QR
+                    </button>
+                </div>
+                
+                <div id="newUserQRContainer" style="display: none; text-align: center; margin-top: 1rem;">
+                    <div id="newUserQRCode" style="margin: 1rem 0;"></div>
+                    <button class="btn btn-secondary" onclick="downloadNewUserQR()">
+                        <i class="fas fa-download"></i> Descargar QR
+                    </button>
+                </div>
+            </div>
+            
+            <div id="newUserModalMessage" class="status-message"></div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeNewUserMagicLinkModal()">Cancelar</button>
+            <button type="button" class="btn btn-primary" onclick="generateNewUserMagicLink()">
+                <i class="fas fa-magic"></i> Generar Enlace
+            </button>
+        </div>
+    </div>
+</div>
 <!-- Delete Group Confirmation Modal -->
 <div id="deleteGroupModal" class="modal">
     <div class="modal-content admin-modal">
@@ -3532,19 +3593,37 @@ async function saveGroup() {
             }, 5000);
         }
 
-        window.addEventListener('DOMContentLoaded', () => {
-            setupAuthEventListeners();
-            
-          
-            // Verificar estado de autenticación inicial
-            const { data: session } = supabase.auth.getSession();
-            if (session && session.user) {
-                currentUser = session.user;
-                showMainApp();
-            } else {
-                showLoginPage();
-            }
-        });
+    window.addEventListener('DOMContentLoaded', () => {
+    console.log('🔍 DOMContentLoaded ejecutado');
+    console.log('🔍 URL actual:', window.location.href);
+    
+    setupAuthEventListeners();
+    
+    // Verificar si es registro público
+    const urlParams = new URLSearchParams(window.location.search);
+    console.log('🔍 Parámetros URL:', Object.fromEntries(urlParams));
+    
+    const publicRegister = urlParams.get('public_register');
+    console.log('🔍 public_register value:', publicRegister, typeof publicRegister);
+    
+    if (publicRegister) {
+        console.log('✅ Detectado registro público, mostrando formulario');
+        showPublicRegistration();
+        return;
+    }
+    
+    console.log('❌ No se detectó registro público, continuando con login normal');
+    
+    // Código original
+    supabase.auth.getSession().then(({ data: session }) => {
+        if (session && session.user) {
+            currentUser = session.user;
+            showMainApp();
+        } else {
+            showLoginPage();
+        }
+    });
+});
 
         supabase.auth.onAuthStateChange(async (event, session) => {
             console.log('Evento de autenticación:', event, session);
@@ -3809,9 +3888,12 @@ async function loadGroups() {
                     if (contactOrg !== activeFilters.organizacion) return false;
                 }
                 
-                // Filtro de espacio
-                if (activeFilters.espacio && contact.espacio_coordinacion !== activeFilters.espacio) return false;
-                
+                // Filtro de espacio - soporte múltiple
+if (activeFilters.espacio) {
+    const contactEspacios = getEspaciosAsArray(contact.espacio_coordinacion);
+    const hasMatchingEspacio = contactEspacios.includes(activeFilters.espacio);
+    if (!hasMatchingEspacio) return false;
+}
 // Filtro de sectores - CORREGIDO PARA DATOS REALES
 if (activeFilters.sectores.length > 0) {
     const contactSectoresString = (contact.sectores_concat || '').toLowerCase();
@@ -4495,6 +4577,17 @@ async function confirmDeleteGroup() {
                 message.style.display = 'block';
             }
         }
+// Función para obtener espacios de coordinación como array
+function getEspaciosAsArray(espacioString) {
+    if (!espacioString) return [];
+    
+    if (typeof espacioString === 'string') {
+        // Dividir por comas y limpiar espacios
+        return espacioString.split(',').map(e => e.trim()).filter(e => e.length > 0);
+    }
+    
+    return [];
+}	
 function downloadEmailList(emails) {
     const content = `Lista de Correos Electrónicos - OCHA Maracaibo
 Fecha: ${new Date().toLocaleDateString('es-ES')}
@@ -4906,6 +4999,227 @@ function showMagicLinkMessage(message, type) {
     messageEl.textContent = message;
     messageEl.className = `status-message status-${type}`;
     messageEl.style.display = 'block';
+}
+// === FUNCIONES PARA NUEVO USUARIO ===
+let currentNewUserData = null;
+
+function showNewUserMagicLinkModal() {
+    document.getElementById('newUserMagicLinkModal').classList.add('active');
+    document.getElementById('newUserEmail').value = '';
+    document.getElementById('newUserOrganization').value = '';
+    document.getElementById('newUserLinkResult').style.display = 'none';
+    document.getElementById('newUserQRContainer').style.display = 'none';
+    clearNewUserMessage();
+}
+
+function closeNewUserMagicLinkModal() {
+    document.getElementById('newUserMagicLinkModal').classList.remove('active');
+    currentNewUserData = null;
+    clearNewUserMessage();
+}
+
+async function generateNewUserMagicLink() {
+    const description = document.getElementById('linkDescription').value.trim() || 'Registro general';
+    
+    try {
+        showNewUserMessage('Generando enlace público...', 'info');
+        
+        const publicToken = generateSecureToken();
+        const appConfig = getAppConfig();
+        const publicLink = `${appConfig.baseUrl}?public_register=true&token=${publicToken}&desc=${encodeURIComponent(description)}`;
+        
+        document.getElementById('generatedForEmail').textContent = 'Cualquier persona';
+        document.getElementById('generatedMagicLink').value = publicLink;
+        document.getElementById('newUserLinkResult').style.display = 'block';
+        
+        currentNewUserData = {
+            description: description,
+            link: publicLink,
+            token: publicToken
+        };
+        
+        showNewUserMessage('Enlace público generado exitosamente', 'success');
+        
+    } catch (error) {
+        console.error('Error generando enlace público:', error);
+        showNewUserMessage('Error generando enlace: ' + error.message, 'error');
+    }
+}
+
+function copyNewUserLink() {
+    const linkTextarea = document.getElementById('generatedMagicLink');
+    linkTextarea.select();
+    linkTextarea.setSelectionRange(0, 99999);
+    
+    navigator.clipboard.writeText(linkTextarea.value).then(() => {
+        showNewUserMessage('Enlace copiado al portapapeles', 'success');
+    }).catch(() => {
+        document.execCommand('copy');
+        showNewUserMessage('Enlace copiado', 'success');
+    });
+}
+
+function sendNewUserEmail() {
+    if (!currentNewUserData) return;
+    
+    const subject = encodeURIComponent('OCHA Maracaibo - Enlace de registro de contactos');
+    const body = encodeURIComponent(`Estimados colegas,
+
+Saludos desde la Sub Oficina OCHA Maracaibo.
+
+Compartimos el siguiente enlace para que las organizaciones humanitarias puedan registrarse en nuestro directorio de contactos:
+
+${currentNewUserData.link}
+
+Descripción: ${currentNewUserData.description}
+
+Este enlace puede ser compartido libremente con cualquier organización que desee formar parte del directorio de coordinación humanitaria.
+
+Saludos cordiales,
+Sub Oficina OCHA Maracaibo`);
+    
+    window.open(`mailto:?subject=${subject}&body=${body}`);
+    showNewUserMessage('Cliente de correo abierto para compartir', 'info');
+}
+function showNewUserQR() {
+    if (!currentNewUserData) return;
+    
+    const qrContainer = document.getElementById('newUserQRContainer');
+    const qrCodeDiv = document.getElementById('newUserQRCode');
+    
+    qrContainer.style.display = 'block';
+    qrCodeDiv.innerHTML = '';
+    
+    try {
+        const qr = new QRCode(qrCodeDiv, {
+            text: currentNewUserData.link,
+            width: 256,
+            height: 256,
+            colorDark: '#0072BC',
+            colorLight: '#FFFFFF',
+            correctLevel: QRCode.CorrectLevel.L
+        });
+        
+        showNewUserMessage('Código QR generado', 'success');
+    } catch (error) {
+        console.error('Error generando QR:', error);
+        qrCodeDiv.innerHTML = '<p style="color: red;">Error generando QR</p>';
+    }
+}
+
+function downloadNewUserQR() {
+    try {
+        const qrCanvas = document.querySelector('#newUserQRCode canvas');
+        if (qrCanvas) {
+            const link = document.createElement('a');
+            link.download = `nuevo-usuario-qr.png`;
+            link.href = qrCanvas.toDataURL('image/png');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showNewUserMessage('QR descargado exitosamente', 'success');
+        }
+    } catch (error) {
+        console.error('Error descargando QR:', error);
+        showNewUserMessage('Error descargando QR', 'error');
+    }
+}
+
+function showNewUserMessage(message, type) {
+    const messageEl = document.getElementById('newUserModalMessage');
+    messageEl.textContent = message;
+    messageEl.className = `status-message status-${type}`;
+    messageEl.style.display = 'block';
+    
+    if (type === 'success' || type === 'info') {
+        setTimeout(() => {
+            messageEl.style.display = 'none';
+        }, 5000);
+    }
+}
+
+function clearNewUserMessage() {
+    const messageEl = document.getElementById('newUserModalMessage');
+    messageEl.textContent = '';
+    messageEl.className = 'status-message';
+    messageEl.style.display = 'none';
+}
+// === REGISTRO PÚBLICO ===
+function showPublicRegistration() {
+    document.getElementById('loginPage').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'none';
+    
+    // Crear formulario público
+    const publicRegisterDiv = document.createElement('div');
+    publicRegisterDiv.id = 'publicRegister';
+    publicRegisterDiv.innerHTML = `
+        <div class="login-container">
+            <div class="login-box" style="max-width: 600px;">
+                <div class="login-logo">
+                    <img src="https://images4.imagebam.com/f2/74/67/MEZQJH3_o.PNG" alt="OCHA Logo">
+                </div>
+                <h2 class="login-main-title">Registro de Contacto</h2>
+                <h3 class="login-form-title">Complete su información</h3>
+                
+                <form id="publicRegisterForm">
+                    <div class="form-group">
+                        <label class="form-label">Organización *</label>
+                        <input type="text" id="pub_organizacion" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Punto Focal *</label>
+                        <input type="text" id="pub_punto_focal" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email *</label>
+                        <input type="email" id="pub_email" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Teléfono</label>
+                        <input type="tel" id="pub_telefono" class="form-control">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <i class="fas fa-save"></i> Registrar Contacto
+                    </button>
+                </form>
+                
+                <div id="publicRegisterMessage" class="status-message" style="margin-top: 1rem;"></div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(publicRegisterDiv);
+    document.getElementById('publicRegisterForm').addEventListener('submit', handlePublicRegistration);
+}
+
+async function handlePublicRegistration(e) {
+    e.preventDefault();
+    
+    const contactData = {
+        organizacion: document.getElementById('pub_organizacion').value.trim(),
+        punto_focal: document.getElementById('pub_punto_focal').value.trim(),
+        email: document.getElementById('pub_email').value.trim().toLowerCase(),
+        Teléfono: document.getElementById('pub_telefono').value.trim()
+    };
+    
+    try {
+        const { error } = await supabase.from('contacts').insert([contactData]);
+        if (error) throw error;
+        
+        const messageEl = document.getElementById('publicRegisterMessage');
+        messageEl.textContent = '¡Contacto registrado exitosamente!';
+        messageEl.className = 'status-message status-success';
+        messageEl.style.display = 'block';
+        
+        document.getElementById('publicRegisterForm').style.display = 'none';
+        
+    } catch (error) {
+        console.error('Error registrando contacto:', error);
+        const messageEl = document.getElementById('publicRegisterMessage');
+        messageEl.textContent = 'Error al registrar: ' + error.message;
+        messageEl.className = 'status-message status-error';
+        messageEl.style.display = 'block';
+    }
 }
     </script>
 </body>
