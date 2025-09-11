@@ -1601,7 +1601,7 @@
             <h2 class="login-main-title">Sub Oficina OCHA Maracaibo</h2>
             
             <form id="loginForm">
-                <h3 class="login-form-title">Ingresar al Sistema</h3>
+                <h3 class="login-form-title">Ingresar al Sistema (sólo para usuarios de OCHA)</h3>
                 <div class="form-group">
                     <label class="form-label" for="loginEmail">Correo Electrónico</label>
                     <input type="email" id="loginEmail" class="form-control" required placeholder="usuario@ejemplo.com">
@@ -2252,7 +2252,15 @@
         // Supabase Configuration
         const SUPABASE_URL = 'https://gvobuytrtqxyvognivdt.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd2b2J1eXRydHF4eXZvZ25pdmR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwNDczMTQsImV4cCI6MjA3MDYyMzMxNH0.34oUejp5IwN5vfFXSEPoJRZbFDv7b2aWHpDuE1pV1nE';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+        persistSession: true,
+        storage: window.localStorage,
+        storageKey: 'ocha-maracaibo-auth',
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+    }
+});
 
         // Admin Configuration
         const ADMIN_PASSWORD = 'coordinacion123';
@@ -3593,7 +3601,7 @@ async function saveGroup() {
             }, 5000);
         }
 
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
     // PRIMERO: Verificar registro público ANTES de hacer CUALQUIER otra cosa
     const urlParams = new URLSearchParams(window.location.search);
     
@@ -3610,14 +3618,25 @@ window.addEventListener('DOMContentLoaded', () => {
     console.log('❌ No es registro público - Continuando con autenticación');
     setupAuthEventListeners();
     
-    supabase.auth.getSession().then(({ data: session }) => {
+    // Verificar sesión persistente primero
+    try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+            console.error('Error obteniendo sesión:', error);
+        }
+        
         if (session && session.user) {
+            console.log('✅ Sesión persistente encontrada:', session.user.email);
             currentUser = session.user;
             showMainApp();
         } else {
+            console.log('❌ No hay sesión persistente');
             showLoginPage();
         }
-    });
+    } catch (error) {
+        console.error('Error verificando sesión:', error);
+        showLoginPage();
+    }
 });
         supabase.auth.onAuthStateChange(async (event, session) => {
             console.log('Evento de autenticación:', event, session);
@@ -3665,17 +3684,40 @@ window.addEventListener('DOMContentLoaded', () => {
             document.getElementById('linkToLoginFromRegister').style.display = formToShow === 'register' ? 'block' : 'none';
             document.getElementById('linkToLoginFromReset').style.display = formToShow === 'reset' ? 'block' : 'none';
         }
+function rememberUser(email) {
+    try {
+        localStorage.setItem('ocha-last-user', email);
+    } catch (error) {
+        console.warn('No se pudo guardar usuario en localStorage:', error);
+    }
+}
 
+function getRememberedUser() {
+    try {
+        return localStorage.getItem('ocha-last-user') || '';
+    } catch (error) {
+        console.warn('No se pudo leer usuario de localStorage:', error);
+        return '';
+    }
+}
+
+function populateLoginForm() {
+    const rememberedEmail = getRememberedUser();
+    if (rememberedEmail) {
+        document.getElementById('loginEmail').value = rememberedEmail;
+    }
+}
         async function handleLogin(e) {
             e.preventDefault();
             hideAuthMessages();
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
             
-            try {
-                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-                if (error) throw error;
-                showSuccess('loginSuccess', 'Ingreso exitoso. Redirigiendo...');
+try {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    rememberUser(email); // Guardar email para próxima vez
+    showSuccess('loginSuccess', 'Ingreso exitoso. Redirigiendo...');
             } catch (error) {
                 let errorMessage = error.message;
                 if (errorMessage.includes("Failed to fetch")) {
@@ -3736,15 +3778,16 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        async function handleLogout() {
-            showAppMessage("Cerrando sesión...", "info", false);
-            try {
-                await supabase.auth.signOut();
-            } catch (error) {
-                console.error("Error durante el logout:", error);
-                showAppMessage("Error al cerrar sesión. Inténtalo de nuevo.", "error");
-            }
-        }
+async function handleLogout() {
+    showAppMessage("Cerrando sesión...", "info", false);
+    try {
+        await supabase.auth.signOut();
+        // No borrar el email recordado al cerrar sesión
+    } catch (error) {
+        console.error("Error durante el logout:", error);
+        showAppMessage("Error al cerrar sesión. Inténtalo de nuevo.", "error");
+    }
+}
 
         function showMainApp() {
             console.log('Mostrando aplicación principal para usuario:', currentUser?.email);
@@ -3758,12 +3801,16 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        function showLoginPage() {
-            console.log('Mostrando página de login');
-            document.getElementById('loginPage').style.display = 'flex';
-            document.getElementById('mainApp').style.display = 'none';
-            showAuthForm('login');
-        }
+function showLoginPage() {
+    console.log('Mostrando página de login');
+    document.getElementById('loginPage').style.display = 'flex';
+    document.getElementById('mainApp').style.display = 'none';
+    showAuthForm('login');
+    // Rellenar email recordado
+    setTimeout(() => {
+        populateLoginForm();
+    }, 100);
+}
 async function loadGroups() {
             try {
                 // 1. Cargar grupos
