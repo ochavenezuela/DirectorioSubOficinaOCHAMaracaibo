@@ -3428,11 +3428,11 @@ async function saveGroup() {
             document.getElementById('Teléfono').value = contact.Teléfono || '';
             document.getElementById('tipo_organizacion').value = contact.tipo_organizacion || '';
             
-            // Establecer checkboxes
-            document.getElementById('reporta_345w').checked = contact.reporta_345w || false;
-            document.getElementById('socio_implementador').checked = contact.socio_implementador || false;
-            document.getElementById('organizacion_lider').checked = contact.organizacion_lider || false;
-            document.getElementById('participacion_flc').checked = contact.participacion_flc || false;
+			// Establecer checkboxes
+			document.getElementById('reporta_345w').checked = contact.reporta_345w === true;
+			document.getElementById('socio_implementador').checked = contact.socio_implementador === true;
+			document.getElementById('organizacion_lider').checked = contact.organizacion_lider === true;
+			document.getElementById('participacion_flc').checked = contact.participacion_flc === true;
             
             // Establecer checkboxes de multi-selección para Sectores
             const contactSectores = (contact.sectores_concat || '').split(',').map(s => s.trim());
@@ -5414,3 +5414,4 @@ async function handlePublicRegistration(e) {
     </script>
 </body>
 </html>
+
