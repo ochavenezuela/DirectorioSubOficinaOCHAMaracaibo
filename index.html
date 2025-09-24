@@ -3345,10 +3345,10 @@ async function saveGroup() {
                 espacio_coordinacion: selectedEspacios.join(', '),
                 sectores_concat: selectedSectores.join(', '),
                 municipios_concat: selectedMunicipios.join(', '),
-                reporta_345w: document.getElementById('reporta_345w').checked,
-                socio_implementador: document.getElementById('socio_implementador').checked,
-                organizacion_lider: document.getElementById('organizacion_lider').checked,
-                participacion_flc: document.getElementById('participacion_flc').checked,
+                reporta_345w: document.getElementById('reporta_345w').checked ? 'Sí' : 'No',
+				socio_implementador: document.getElementById('socio_implementador').checked ? 'Sí' : 'No',
+				organizacion_lider: document.getElementById('organizacion_lider').checked ? 'Sí' : 'No',
+				participacion_flc: document.getElementById('participacion_flc').checked ? 'Sí' : 'No',
             };
             
             try {
@@ -3374,36 +3374,47 @@ async function saveGroup() {
         }
 
         function viewContact(id) {
-            const contact = contacts.find(c => c.id.toString() === id);
-            if (!contact) {
-                console.error("Contacto no encontrado para ver:", id);
-                return;
-            }
+    const contact = contacts.find(c => c.id.toString() === id);
+    if (!contact) {
+        console.error("Contacto no encontrado para ver:", id);
+        return;
+    }
 
-            const viewBody = document.getElementById('viewContactBody');
-            viewBody.innerHTML = `
-                <h4 style="color: var(--color-ochablue); margin-bottom: 1rem;">${contact.organizacion || 'N/A'} (${contact.siglas || 'N/A'})</h4>
-                <p><strong>Punto Focal:</strong> ${contact.punto_focal || 'N/A'}</p>
-                <p><strong>Cargo:</strong> ${contact.cargo || 'N/A'}</p>
-                <p><strong>Email:</strong> ${contact.email || 'N/A'}<i class="fas fa-copy copy-icon" title="Copiar email" onclick="copyToClipboard('${contact.email}', this)"></i></p>
-                <p><strong>Teléfono:</strong> ${contact.Teléfono || 'N/A'}</p>
-                <p><strong>Tipo de Organización:</strong> ${contact.tipo_organizacion || 'N/A'}</p>
-                <p><strong>Espacio de Coordinación:</strong> ${contact.espacio_coordinacion || 'N/A'}</p>
-                <hr>
-                <h5 style="color: var(--color-ochablue); margin-top: 1rem; margin-bottom: 0.5rem;">Sectores</h5>
-                <p>${contact.sectores_concat || 'No especificado'}</p>
-                <h5 style="color: var(--color-ochablue); margin-top: 1rem; margin-bottom: 0.5rem;">Municipios</h5>
-                <p>${contact.municipios_concat || 'No especificado'}</p>
-                <hr>
-                <h5 style="color: var(--color-ochablue); margin-top: 1rem; margin-bottom: 0.5rem;">Participación</h5>
-                <p><strong>Reporta en el 345W:</strong> ${contact.reporta_345w ? 'Sí' : 'No'}</p>
-                <p><strong>Socio Implementador:</strong> ${contact.socio_implementador ? 'Sí' : 'No'}</p>
-                <p><strong>Organización Líder:</strong> ${contact.organizacion_lider ? 'Sí' : 'No'}</p>
-                <p><strong>Participación FLC:</strong> ${contact.participacion_flc ? 'Sí' : 'No'}</p>
-            `;
-
-            document.getElementById('viewContactModal').classList.add('active');
+    // Función auxiliar para evaluar valores booleanos
+    const evaluateBoolean = (value) => {
+        if (value === null || value === undefined || value === '') return 'No';
+        if (typeof value === 'boolean') return value ? 'Sí' : 'No';
+        if (typeof value === 'string') {
+            const lowerValue = value.toLowerCase().trim();
+            return (lowerValue === 'sí' || lowerValue === 'si' || lowerValue === 'true' || lowerValue === '1') ? 'Sí' : 'No';
         }
+        return value ? 'Sí' : 'No';
+    };
+
+    const viewBody = document.getElementById('viewContactBody');
+    viewBody.innerHTML = `
+        <h4 style="color: var(--color-ochablue); margin-bottom: 1rem;">${contact.organizacion || 'N/A'} (${contact.siglas || 'N/A'})</h4>
+        <p><strong>Punto Focal:</strong> ${contact.punto_focal || 'N/A'}</p>
+        <p><strong>Cargo:</strong> ${contact.cargo || 'N/A'}</p>
+        <p><strong>Email:</strong> ${contact.email || 'N/A'}<i class="fas fa-copy copy-icon" title="Copiar email" onclick="copyToClipboard('${contact.email}', this)"></i></p>
+        <p><strong>Teléfono:</strong> ${contact.Teléfono || 'N/A'}</p>
+        <p><strong>Tipo de Organización:</strong> ${contact.tipo_organizacion || 'N/A'}</p>
+        <p><strong>Espacio de Coordinación:</strong> ${contact.espacio_coordinacion || 'N/A'}</p>
+        <hr>
+        <h5 style="color: var(--color-ochablue); margin-top: 1rem; margin-bottom: 0.5rem;">Sectores</h5>
+        <p>${contact.sectores_concat || 'No especificado'}</p>
+        <h5 style="color: var(--color-ochablue); margin-top: 1rem; margin-bottom: 0.5rem;">Municipios</h5>
+        <p>${contact.municipios_concat || 'No especificado'}</p>
+        <hr>
+        <h5 style="color: var(--color-ochablue); margin-top: 1rem; margin-bottom: 0.5rem;">Participación</h5>
+        <p><strong>Reporta en el 345W:</strong> ${evaluateBoolean(contact.reporta_345w)}</p>
+        <p><strong>Socio Implementador:</strong> ${evaluateBoolean(contact.socio_implementador)}</p>
+        <p><strong>Organización Líder:</strong> ${evaluateBoolean(contact.organizacion_lider)}</p>
+        <p><strong>Participación FLC:</strong> ${evaluateBoolean(contact.participacion_flc)}</p>
+    `;
+
+    document.getElementById('viewContactModal').classList.add('active');
+}
 
         function closeViewContactModal() {
             document.getElementById('viewContactModal').classList.remove('active');
@@ -3429,10 +3440,10 @@ async function saveGroup() {
             document.getElementById('tipo_organizacion').value = contact.tipo_organizacion || '';
             
 			// Establecer checkboxes
-			document.getElementById('reporta_345w').checked = contact.reporta_345w === true;
-			document.getElementById('socio_implementador').checked = contact.socio_implementador === true;
-			document.getElementById('organizacion_lider').checked = contact.organizacion_lider === true;
-			document.getElementById('participacion_flc').checked = contact.participacion_flc === true;
+			document.getElementById('reporta_345w').checked = (contact.reporta_345w === 'Sí' || contact.reporta_345w === true);
+			document.getElementById('socio_implementador').checked = (contact.socio_implementador === 'Sí' || contact.socio_implementador === true);
+			document.getElementById('organizacion_lider').checked = (contact.organizacion_lider === 'Sí' || contact.organizacion_lider === true);
+			document.getElementById('participacion_flc').checked = (contact.participacion_flc === 'Sí' || contact.participacion_flc === true);
             
             // Establecer checkboxes de multi-selección para Sectores
             const contactSectores = (contact.sectores_concat || '').split(',').map(s => s.trim());
@@ -3522,6 +3533,12 @@ async function saveGroup() {
             document.querySelectorAll('#sectoresMultiSelect input[type="checkbox"]').forEach(checkbox => checkbox.checked = false);
             document.querySelectorAll('#municipiosMultiSelect input[type="checkbox"]').forEach(checkbox => checkbox.checked = false);
             document.querySelectorAll('#espaciosMultiSelect input[type="checkbox"]').forEach(checkbox => checkbox.checked = false);
+			
+			    // AGREGA ESTAS LÍNEAS PARA LIMPIAR LOS CHECKBOXES DE PARTICIPACIÓN:
+			document.getElementById('reporta_345w').checked = false;
+			document.getElementById('socio_implementador').checked = false;
+			document.getElementById('organizacion_lider').checked = false;
+			document.getElementById('participacion_flc').checked = false;
             
             document.getElementById('contactModal').classList.add('active');
         }
@@ -5414,4 +5431,3 @@ async function handlePublicRegistration(e) {
     </script>
 </body>
 </html>
-
