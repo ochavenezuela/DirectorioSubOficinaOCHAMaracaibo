@@ -343,7 +343,9 @@
                 console.log('Validando token...');
                 const result = await supabase.rpc('validate_magic_link', {
                     p_token: token,
-                    p_mark_as_used: false
+                    p_mark_as_used: false,
+                    p_ip_address: null,
+                    p_user_agent: navigator.userAgent || null
                 });
                 
                 if (result.error) {
@@ -466,7 +468,9 @@
                     console.log('Marcando token como usado...');
                     await supabase.rpc('validate_magic_link', {
                         p_token: magicToken,
-                        p_mark_as_used: true
+                        p_mark_as_used: true,
+                        p_ip_address: null,
+                        p_user_agent: navigator.userAgent || null
                     });
                 }
                 
@@ -530,4 +534,3 @@
 </body>
 
 </html>
-
