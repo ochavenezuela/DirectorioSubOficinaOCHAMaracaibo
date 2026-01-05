@@ -176,6 +176,11 @@
             color: var(--color-ochablue);
         }
 
+        .no-auth #loginPage { display: none !important; }
+        .no-auth #mainApp { display: block !important; }
+        /* Al pedir clave, ocultamos la página de login y mantenemos el fondo azul visible */
+        .access-locked #loginPage { display: none !important; }
+        .access-locked #mainApp { display: none !important; }
         .btn {
             padding: 0.75rem 1.5rem;
             border: none;
@@ -803,7 +808,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgb(65, 143, 222); /* Overlay azul solo para el modal */
             z-index: 1000;
             align-items: center;
             justify-content: center;
@@ -1591,7 +1596,7 @@
         }
     </style>
 </head>
-<body>
+<body class="no-auth">
     <!-- Login Page -->
     <div id="loginPage" class="login-container">
         <div class="login-box">
@@ -1696,7 +1701,7 @@
                         <span id="userEmail"></span>
                     </div>
                     <button class="btn btn-secondary" onclick="handleLogout()">
-                        <i class="fas fa-sign-out-alt"></i> Salir
+                        <i class="fas fa-sign-in-alt"></i> Entrar
                     </button>
                 </div>
             </div>
@@ -2250,10 +2255,16 @@
 
     <script>
         // Supabase Configuration
-        const SUPABASE_URL = 'https://gvobuytrtqxyvognivdt.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd2b2J1eXRydHF4eXZvZ25pdmR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwNDczMTQsImV4cCI6MjA3MDYyMzMxNH0.34oUejp5IwN5vfFXSEPoJRZbFDv7b2aWHpDuE1pV1nE';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: {
+const SUPABASE_URL = 'https://gvobuytrtqxyvognivdt.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd2b2J1eXRydHF4eXZvZ25pdmR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwNDczMTQsImV4cCI6MjA3MDYyMzMxNH0.34oUejp5IwN5vfFXSEPoJRZbFDv7b2aWHpDuE1pV1nE';
+const DISABLE_AUTH = true; // Modo lectura sin autenticación
+let viewerAccessAllowed = false; // Controla acceso en modo sin login (pedir clave al inicio)
+const ALLOWED_VIEWER_PASSWORDS = ['laura', 'jhozman', 'enrique', 'oficial falcón', 'oficial falcon'];
+if (DISABLE_AUTH) {
+    document.documentElement.classList.add('no-auth', 'access-locked');
+}
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+auth: {
         persistSession: true,
         storage: window.localStorage,
         storageKey: 'ocha-maracaibo-auth',
@@ -2385,7 +2396,7 @@ let currentDeletingGroup = null;
                 const expiresAt = new Date();
                 expiresAt.setHours(expiresAt.getHours() + 2);
                 
-                const { error } = await supabase
+                const { error } = await sb
                     .from('magic_links')
                     .upsert({
                         contact_id: contactId,
@@ -2465,13 +2476,13 @@ let currentDeletingGroup = null;
         function setupRealtimeSubscription() {
             if (contactChangesChannel) {
                 try {
-                    supabase.removeChannel(contactChangesChannel);
+                    sb.removeChannel(contactChangesChannel);
                 } catch(e) {
                     console.warn("Error eliminando canal anterior:", e);
                 }
             }
             
-            contactChangesChannel = supabase.channel('contacts-changes');
+            contactChangesChannel = sb.channel('contacts-changes');
             contactChangesChannel
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts' }, handleRealtimeUpdate)
                 .subscribe((status) => {
@@ -2852,7 +2863,7 @@ function setupSectorIcons() {
 
             for (let i = 0; i < contactsToUpsert.length; i += chunkSize) {
                 const chunk = contactsToUpsert.slice(i, i + chunkSize);
-                const { error } = await supabase.from('contacts').upsert(chunk, { onConflict: 'email' });
+                const { error } = await sb.from('contacts').upsert(chunk, { onConflict: 'email' });
 
                 if (error) {
                     console.error("Error during upsert for chunk:", error);
@@ -3186,7 +3197,7 @@ async function saveGroup() {
                 ).filter(Boolean);
 
                 // 1. Crear el grupo
-                const { data: newGroup, error: groupError } = await supabase
+                const { data: newGroup, error: groupError } = await sb
                     .from('contact_groups')
                     .insert([{
                         name: groupName,
@@ -3205,7 +3216,7 @@ async function saveGroup() {
                     added_by: currentUser?.id || null
                 }));
 
-                const { error: membersError } = await supabase
+                const { error: membersError } = await sb
                     .from('contact_group_members')
                     .insert(memberInserts);
 
@@ -3356,9 +3367,9 @@ async function saveGroup() {
                 
                 let query;
                 if (contactId) {
-                    query = supabase.from('contacts').update(contactData).eq('id', contactId);
+                    query = sb.from('contacts').update(contactData).eq('id', contactId);
                 } else {
-                    query = supabase.from('contacts').insert([contactData]);
+                    query = sb.from('contacts').insert([contactData]);
                 }
                 const { error } = await query;
                 if (error) throw error;
@@ -3514,7 +3525,7 @@ async function saveGroup() {
         async function performDelete(id) {
             try {
                 showAppMessage('Eliminando contacto...', 'info', false);
-                const { error } = await supabase.from('contacts').delete().eq('id', id);
+                const { error } = await sb.from('contacts').delete().eq('id', id);
                 if (error) throw error;
                 showAppMessage('Contacto eliminado exitosamente', 'success');
                 await loadContacts();
@@ -3631,13 +3642,19 @@ window.addEventListener('DOMContentLoaded', async () => {
         return; // SALIR COMPLETAMENTE - no hacer nada más
     }
     
+    // Modo sin autenticación: pedir clave antes de cargar
+    if (DISABLE_AUTH) {
+        promptViewerAccess();
+        return;
+    }
+    
     // Solo si NO es registro público, continuar con autenticación
     console.log('❌ No es registro público - Continuando con autenticación');
     setupAuthEventListeners();
     
     // Verificar sesión persistente primero
     try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const { data: { session }, error } = await sb.auth.getSession();
         if (error) {
             console.error('Error obteniendo sesión:', error);
         }
@@ -3648,14 +3665,23 @@ window.addEventListener('DOMContentLoaded', async () => {
             showMainApp();
         } else {
             console.log('❌ No hay sesión persistente');
-            showLoginPage();
+            if (DISABLE_AUTH) {
+                showMainApp();
+            } else {
+                showLoginPage();
+            }
         }
     } catch (error) {
         console.error('Error verificando sesión:', error);
-        showLoginPage();
+        if (DISABLE_AUTH) {
+            showMainApp();
+        } else {
+            showLoginPage();
+        }
     }
 });
-        supabase.auth.onAuthStateChange(async (event, session) => {
+        sb.auth.onAuthStateChange(async (event, session) => {
+            if (DISABLE_AUTH) return;
             console.log('Evento de autenticación:', event, session);
             const previousUser = currentUser;
             
@@ -3678,7 +3704,7 @@ window.addEventListener('DOMContentLoaded', async () => {
                 if (appInitialized) {
                     if (contactChangesChannel) {
                         try {
-                            await supabase.removeChannel(contactChangesChannel);
+                            await sb.removeChannel(contactChangesChannel);
                         } catch(e) {
                             console.warn("Error eliminando canal anterior:", e);
                         }
@@ -3730,32 +3756,50 @@ function populateLoginForm() {
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
             
-try {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
-    rememberUser(email); // Guardar email para próxima vez
-    showSuccess('loginSuccess', 'Ingreso exitoso. Redirigiendo...');
+            // En modo sin auth, validamos contra lista local
+            if (DISABLE_AUTH) {
+                const passNormalized = (password || '').trim().toLowerCase();
+                if (ALLOWED_VIEWER_PASSWORDS.includes(passNormalized)) {
+                    viewerAccessAllowed = true;
+                    currentUser = { email: 'ochaviewer@ocha' };
+                    showSuccess('loginSuccess', 'Acceso otorgado.');
+                    showMainApp();
+                } else {
+                    showError('loginError', 'Clave incorrecta. Usa: Laura, Jhozman, Enrique u Oficial Falc?n.');
+                }
+                return;
+            }
+
+            try {
+                const { data, error } = await sb.auth.signInWithPassword({ email, password });
+                if (error) throw error;
+                rememberUser(email); // Guardar email para proxima vez
+                showSuccess('loginSuccess', 'Ingreso exitoso. Redirigiendo...');
+                // Si la sesion viene en la respuesta, avanzar sin esperar el listener
+                if (data && (data.session?.user || data.user)) {
+                    currentUser = data.session?.user || data.user;
+                    showMainApp();
+                }
             } catch (error) {
                 let errorMessage = error.message;
-                if (errorMessage.includes("Failed to fetch")) {
-                    errorMessage = "Error de red o CORS. Verifique su conexión a internet.";
-                } else if (errorMessage.includes("Invalid login credentials")) {
-                    errorMessage = "Credenciales inválidas. Por favor, revise su correo y contraseña.";
-                } else if (errorMessage.includes("Email not confirmed")) {
-                    errorMessage = "Su correo electrónico no ha sido confirmado. Revise su bandeja de entrada para el enlace de confirmación.";
+                if (errorMessage.includes('Failed to fetch')) {
+                    errorMessage = 'Error de red o CORS. Verifique su conexion a internet.';
+                } else if (errorMessage.includes('Invalid login credentials')) {
+                    errorMessage = 'Credenciales invalidas. Por favor, revise su correo y contraseña.';
+                } else if (errorMessage.includes('Email not confirmed')) {
+                    errorMessage = 'Su correo electronico no ha sido confirmado. Revise su bandeja de entrada para el enlace de confirmacion.';
                 }
                 showError('loginError', `Error al ingresar: ${errorMessage}`);
             }
         }
-
-        async function handleRegister(e) {
+async function handleRegister(e) {
             e.preventDefault();
             hideAuthMessages();
             const email = document.getElementById('registerEmail').value;
             const password = document.getElementById('registerPassword').value;
             
             try {
-                const { data, error } = await supabase.auth.signUp({ email, password });
+                const { data, error } = await sb.auth.signUp({ email, password });
                 if (error) throw error;
                 
                 if (data.user && data.user.identities && data.user.identities.length === 0) {
@@ -3781,8 +3825,8 @@ try {
             const email = document.getElementById('resetEmail').value;
             
             try {
-                const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                    redirectTo: window.location.origin + '/update-password.html'
+                const { error } = await sb.auth.resetPasswordForEmail(email, {
+                    redirectTo: new URL('update-password.html', window.location.href).href
                 });
                 if (error) throw error;
                 showSuccess('resetSuccess', 'Si existe una cuenta asociada a este correo, se ha enviado un enlace para restablecer la contraseña.');
@@ -3795,11 +3839,67 @@ try {
             }
         }
 
+// Solicitar clave de acceso en modo sin autenticacion (modal)
+function openAccessModal() {
+    document.documentElement.classList.add('access-locked');
+    const msg = document.getElementById('accessModalMessage');
+    msg.textContent = '';
+    msg.className = 'status-message';
+    msg.style.display = 'none';
+    const input = document.getElementById('accessPassword');
+    input.value = '';
+    document.getElementById('accessModal').classList.add('active');
+    setTimeout(() => input.focus(), 50);
+}
+
+function closeAccessModal() {
+    document.getElementById('accessModal').classList.remove('active');
+}
+
+function submitAccessPassword() {
+    const passNormalized = (document.getElementById('accessPassword').value || '').trim().toLowerCase();
+    const msg = document.getElementById('accessModalMessage');
+    if (ALLOWED_VIEWER_PASSWORDS.includes(passNormalized)) {
+        viewerAccessAllowed = true;
+        currentUser = { email: 'ochaviewer@ocha' };
+        document.documentElement.classList.remove('access-locked');
+        closeAccessModal();
+        showMainApp();
+    } else {
+        viewerAccessAllowed = false;
+        msg.textContent = 'Contraseña incorrecta.';
+        msg.className = 'status-message status-error';
+        msg.style.display = 'block';
+    }
+}
+
+function promptViewerAccess() {
+    if (!DISABLE_AUTH) return;
+    // Ocultar vistas mientras se pide clave
+    document.getElementById('loginPage').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'none';
+    openAccessModal();
+}
+
 async function handleLogout() {
     showAppMessage("Cerrando sesión...", "info", false);
     try {
-        await supabase.auth.signOut();
-        // No borrar el email recordado al cerrar sesión
+        if (!DISABLE_AUTH) {
+            await sb.auth.signOut();
+        }
+        viewerAccessAllowed = false;
+        currentUser = null;
+        contacts = [];
+        filteredContacts = [];
+        appInitialized = false;
+        applyFilters();
+        showAuthForm('login');
+        document.getElementById('loginPage').style.display = 'none';
+        document.getElementById('mainApp').style.display = 'none';
+        showAppMessage("Ingresa la clave de acceso para reingresar.", "info");
+        if (DISABLE_AUTH) {
+            promptViewerAccess();
+        }
     } catch (error) {
         console.error("Error durante el logout:", error);
         showAppMessage("Error al cerrar sesión. Inténtalo de nuevo.", "error");
@@ -3819,6 +3919,11 @@ async function handleLogout() {
         }
 
 function showLoginPage() {
+    if (DISABLE_AUTH && !viewerAccessAllowed) {
+        // permitir mostrar login para volver a pedir clave de acceso
+    } else if (DISABLE_AUTH) {
+        return;
+    }
     console.log('Mostrando página de login');
     document.getElementById('loginPage').style.display = 'flex';
     document.getElementById('mainApp').style.display = 'none';
@@ -3831,7 +3936,7 @@ function showLoginPage() {
 async function loadGroups() {
             try {
                 // 1. Cargar grupos
-                const { data: groups, error: groupsError } = await supabase
+                const { data: groups, error: groupsError } = await sb
                     .from('contact_groups')
                     .select('*')
                     .order('created_at', { ascending: false });
@@ -3841,7 +3946,7 @@ async function loadGroups() {
                 // 2. Para cada grupo, cargar sus contactos
                 savedGroups = await Promise.all((groups || []).map(async (group) => {
                     // Obtener IDs de contactos del grupo
-                    const { data: members, error: membersError } = await supabase
+                    const { data: members, error: membersError } = await sb
                         .from('contact_group_members')
                         .select('contact_id')
                         .eq('group_id', group.id);
@@ -3872,7 +3977,7 @@ async function loadGroups() {
         async function loadContacts() {
             try {
                 showAppMessage('Cargando contactos...', 'info', false);
-                const { data, error } = await supabase
+                const { data, error } = await sb
                     .from('contacts')
                     .select('*')
                     .order('organizacion', { ascending: true });
@@ -4186,7 +4291,7 @@ createKPICard(kpiGrid, { icon: 'fa-th-list', value: sectoresEnUso.size, label: '
             }
 
             try {
-                const { data: contact, error: contactError } = await supabase
+                const { data: contact, error: contactError } = await sb
                     .from('contacts')
                     .select('id')
                     .eq('email', email)
@@ -4525,7 +4630,7 @@ async function updateGroup() {
             }
             
             try {
-                const { data, error } = await supabase
+                const { data, error } = await sb
                     .from('contact_groups')
                     .update({
                         name: newName,
@@ -4603,7 +4708,7 @@ async function confirmDeleteGroup() {
                 
                 // 1. Eliminar relaciones en contact_group_members (se eliminan automáticamente por CASCADE)
                 // 2. Eliminar el grupo
-                const { error } = await supabase
+                const { error } = await sb
                     .from('contact_groups')
                     .delete()
                     .eq('id', groupId);
@@ -5392,7 +5497,7 @@ async function handlePublicRegistration(e) {
     
     try {
         // Usar una función especial que omita RLS para registros públicos
-        const { data, error } = await supabase.functions.invoke('public-contact-registration', {
+        const { data, error } = await sb.functions.invoke('public-contact-registration', {
             body: contactData
         });
         
@@ -5410,7 +5515,7 @@ async function handlePublicRegistration(e) {
         
         // Fallback: Intentar inserción directa (puede fallar por RLS)
         try {
-            const { error: directError } = await supabase.from('contacts').insert([contactData]);
+            const { error: directError } = await sb.from('contacts').insert([contactData]);
             if (directError) throw directError;
             
             const messageEl = document.getElementById('publicRegisterMessage');
@@ -5429,5 +5534,48 @@ async function handlePublicRegistration(e) {
     }
 }
     </script>
+
+<script>
+// Forzar modo sin autenticacion incluso si algun handler muestra login
+if (typeof DISABLE_AUTH !== 'undefined' && DISABLE_AUTH) {
+    document.addEventListener('DOMContentLoaded', () => {
+        const login = document.getElementById('loginPage');
+        const app = document.getElementById('mainApp');
+        if (login) login.style.display = 'none';
+        if (app) app.style.display = 'block';
+        appInitialized = false;
+        if (typeof initializeApp === 'function') {
+            initializeApp();
+        }
+    });
+}
+</script>
+
+    <!-- Modal clave de acceso (modo sin autenticaci?n) -->
+    <div id="accessModal" class="modal">
+        <div class="modal-content" style="max-width: 420px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Acceso requerido</h3>
+                <button class="modal-close" onclick="closeAccessModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 0.75rem;">Para volver a ver los datos, ingrese su contraseña.</p>
+                <div class="form-group">
+                    <label class="form-label" for="accessPassword">Contraseña</label>
+                    <div class="password-container">
+                        <input type="password" id="accessPassword" class="form-control" placeholder="????????">
+                    </div>
+                </div>
+                <div id="accessModalMessage" class="status-message" style="display:none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeAccessModal()">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="submitAccessPassword()">
+                    <i class="fas fa-unlock"></i> Acceder
+                </button>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
