@@ -373,7 +373,7 @@
             try {
                 console.log('Cargando contacto ID:', contactId);
                 
-                const result = await supabase
+                const result = await sbClient
                     .from('contacts')
                     .select('*')
                     .eq('id', contactId)
@@ -451,7 +451,7 @@
                 
                 console.log('Actualizando contacto con datos:', contactData);
                 
-                const result = await supabase
+                const result = await sbClient
                     .from('contacts')
                     .update(contactData)
                     .eq('id', contactId);
