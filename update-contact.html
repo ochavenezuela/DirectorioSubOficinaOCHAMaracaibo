@@ -309,8 +309,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         // Configuración de Supabase
-        const supabase = window.supabase.createClient(
-            'https://gvobuytrtqxyvognivdt.supabase.co',
+        const sb = window.supabase.createClient(
+            'https://gvobuytrtqxyvognivdt.sb.co',
             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd2b2J1eXRydHF4eXZvZ25pdmR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwNDczMTQsImV4cCI6MjA3MDYyMzMxNH0.34oUejp5IwN5vfFXSEPoJRZbFDv7b2aWHpDuE1pV1nE'
         );
 
@@ -341,7 +341,7 @@
         async function validateToken(token) {
             try {
                 console.log('Validando token...');
-                const result = await supabase.rpc('validate_magic_link', {
+                const result = await sb.rpc('validate_magic_link', {
                     p_token: token,
                     p_mark_as_used: false,
                     p_ip_address: null,
@@ -466,7 +466,7 @@
                 // Marcar token como usado si se usó magic link
                 if (magicToken) {
                     console.log('Marcando token como usado...');
-                    await supabase.rpc('validate_magic_link', {
+                    await sb.rpc('validate_magic_link', {
                         p_token: magicToken,
                         p_mark_as_used: true,
                         p_ip_address: null,
