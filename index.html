@@ -1092,6 +1092,128 @@
     margin-bottom: 0.25rem;
 }
 
+/* NUEVO: Estilos para Modal Avanzado de Grupos (Dos Niveles) */
+.groups-view {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.group-list-card {
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.group-list-card:hover {
+    border-color: var(--color-ochablue);
+    box-shadow: 0 4px 12px rgba(0, 83, 146, 0.1);
+    transform: translateY(-2px);
+}
+
+.group-list-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+}
+
+.group-list-card-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--color-ochablue);
+    margin: 0 0 0.25rem 0;
+}
+
+.group-list-card-count {
+    background: var(--color-ochablue);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.group-list-card-description {
+    font-size: 0.9rem;
+    color: var(--color-ochagrey);
+    margin-bottom: 1rem;
+    line-height: 1.4;
+}
+
+.group-list-card-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+.group-list-card-actions .btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+}
+
+/* Estilos para lista de miembros con checkboxes */
+.member-checkbox-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.member-checkbox-item:hover {
+    background: #f8f9fa;
+    border-color: var(--color-ochablue);
+}
+
+.member-checkbox-item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin-right: 1rem;
+    cursor: pointer;
+    accent-color: var(--color-ochablue);
+}
+
+.member-checkbox-item label {
+    cursor: pointer;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin: 0;
+}
+
+.member-checkbox-name {
+    font-weight: 600;
+    color: var(--color-ochaprimarytext);
+    font-size: 0.95rem;
+}
+
+.member-checkbox-org {
+    font-size: 0.85rem;
+    color: var(--color-ochagrey);
+}
+
+.member-checkbox-item input[type="checkbox"]:checked + label {
+    color: var(--color-ochablue);
+}
+
+.member-checkbox-item input[type="checkbox"]:checked + label .member-checkbox-name {
+    color: var(--color-ochablue);
+    font-weight: 700;
+}
+
+.member-checkbox-item.checked {
+    background: var(--ocha-light-blue);
+    border-color: var(--color-ochablue);
+}
+
 .group-item-name {
     font-weight: 600;
     font-size: 0.9rem;
@@ -1802,6 +1924,9 @@
 			<button class="btn btn-info" onclick="showNewUserMagicLinkModal()">
     <i class="fas fa-link"></i> <span class="btn-text">Enlace Público</span>
 </button>
+                            <button class="btn btn-primary" onclick="showGroupModal()" title="Gestionar grupos: crear, editar y administrar miembros">
+                                <i class="fas fa-users-cog"></i> <span class="btn-text">Gestionar Grupos</span>
+                            </button>
                         </div>
                     </div>
                     
@@ -2055,9 +2180,8 @@
             </div>
             <div class="modal-body">
                 <div class="email-notice">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <strong>Importante:</strong> Para eliminar un contacto, primero debe enviar un correo a 
-                    <strong>jhozman.camacho@un.org</strong> solicitando autorización para realizar esta acción.
+                    <i class="fas fa-shield-alt"></i>
+                    <strong>Seguridad:</strong> Esta acción requiere privilegios de administrador para crear grupos de contactos.
                 </div>
                 <p id="adminActionMessage" style="margin-bottom: 1rem;"></p>
                 <div class="admin-input">
@@ -2079,46 +2203,41 @@
             </div>
         </div>
     </div>
-<!-- Edit Group Modal -->
-<div id="editGroupModal" class="modal">
-    <div class="modal-content admin-modal">
-        <div class="modal-header">
-            <h3 class="modal-title">Editar Grupo</h3>
-            <button class="modal-close" onclick="closeEditGroupModal()">&times;</button>
-        </div>
-        <div class="modal-body">
-            <input type="hidden" id="editGroupId">
-            
-            <!-- Información del grupo -->
-            <div class="form-group">
-                <label class="form-label">Nombre del Grupo:</label>
-                <input type="text" id="editGroupName" class="form-control" placeholder="Ej: Coordinadores Sector Salud">
+
+    <!-- NUEVO: Modal de Confirmación Simple para Eliminar Contacto -->
+    <div id="deleteContactModal" class="modal">
+        <div class="modal-content admin-modal" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    <i class="fas fa-exclamation-circle" style="color: var(--ocha-red);"></i>
+                    Confirmar Eliminación
+                </h3>
+                <button class="modal-close" onclick="closeDeleteContactModal()">&times;</button>
             </div>
-            <div class="form-group">
-                <label class="form-label">Descripción:</label>
-                <textarea id="editGroupDescription" class="form-control" rows="3" placeholder="Descripción del propósito del grupo..."></textarea>
-            </div>
-            
-            <!-- Lista de contactos del grupo -->
-            <div style="border-top: 1px solid #eee; padding-top: 1.5rem; margin-top: 1.5rem;">
-                <h5 style="color: var(--color-ochablue); margin-bottom: 1rem;">
-                    <i class="fas fa-users"></i> Contactos en este grupo
-                </h5>
-                <div id="editGroupContactsList" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; border-radius: 6px; padding: 1rem; background: #f8f9fa;">
-                    <!-- Los contactos se cargarán aquí -->
+            <div class="modal-body">
+                <div class="email-notice" style="background-color: #fff3cd; border-left: 4px solid var(--color-ochayellow);">
+                    <i class="fas fa-info-circle" style="color: #856404;"></i>
+                    <strong>¿Está seguro?</strong> Esta acción eliminará permanentemente el contacto y no se puede deshacer.
                 </div>
+
+                <div id="deleteContactInfo" style="background: var(--ocha-light-blue); border-radius: 8px; padding: 1.25rem; margin: 1.5rem 0; border-left: 4px solid var(--color-ochablue);">
+                    <!-- Información del contacto se cargará aquí -->
+                </div>
+
+                <div id="deleteContactModalMessage" class="status-message"></div>
             </div>
-            
-            <div id="editGroupModalMessage" class="status-message"></div>
-        </div>
-        <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" onclick="closeEditGroupModal()">Cancelar</button>
-            <button type="button" class="btn btn-primary" onclick="updateGroup()">
-                <i class="fas fa-save"></i> Guardar Cambios
-            </button>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeDeleteContactModal()">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button type="button" class="btn btn-danger" onclick="confirmDeleteContact()">
+                    <i class="fas fa-trash-alt"></i> Sí, Eliminar
+                </button>
+            </div>
         </div>
     </div>
-</div>
+
+<!-- Modal antiguo de edición de grupos ELIMINADO - Ahora se usa el modal unificado groupModal -->
 <!-- New User Magic Link Modal -->
 <div id="newUserMagicLinkModal" class="modal">
     <div class="modal-content" style="max-width: 600px;">
@@ -2188,9 +2307,13 @@
         <div class="modal-body">
             <input type="hidden" id="deleteGroupId">
             
-            <div class="email-notice">
-                <i class="fas fa-exclamation-triangle"></i>
-                <strong>¿Está seguro?</strong> Esta acción eliminará permanentemente el grupo y no se puede deshacer.
+            <div class="email-notice" style="background: #fff3cd; border-left: 4px solid var(--color-ochayellow);">
+                <i class="fas fa-exclamation-triangle" style="color: #856404;"></i>
+                <strong>¿Desea eliminar este grupo?</strong>
+                <p style="margin: 0.5rem 0 0 0; font-size: 0.95rem;">
+                    Los contactos asociados <strong>NO se borrarán</strong>, solo quedarán sin este grupo asignado.
+                    Esta acción no se puede deshacer.
+                </p>
             </div>
             
             <div style="margin: 1.5rem 0;">
@@ -2210,47 +2333,106 @@
         </div>
     </div>
 </div>
-    <!-- Group Modal (mejorado con lista de grupos existentes) -->
+    <!-- NUEVO: Modal de Gestión Avanzada de Grupos (Dos Niveles) -->
     <div id="groupModal" class="modal">
-        <div class="modal-content admin-modal">
+        <div class="modal-content admin-modal" style="max-width: 800px;">
             <div class="modal-header">
-                <h3 class="modal-title">Gestión de Grupos de Contactos</h3>
+                <h3 class="modal-title" id="groupModalTitle">
+                    <i class="fas fa-users"></i> Gestión de Grupos
+                </h3>
                 <button class="modal-close" onclick="closeGroupModal()">&times;</button>
             </div>
             <div class="modal-body">
-                <!-- Lista de grupos existentes -->
-                <div class="group-list" id="existingGroupsList">
-                    <h5><i class="fas fa-list"></i> Grupos Existentes</h5>
-                    <div id="groupsContainer">
-                        <!-- Los grupos se cargarán aquí dinámicamente -->
+
+                <!-- NIVEL 1: LISTA DE GRUPOS -->
+                <div id="groupsListView" class="groups-view">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <h5 style="margin: 0; color: var(--color-ochablue);">
+                            <i class="fas fa-list"></i> Grupos Existentes
+                        </h5>
+                        <button class="btn btn-primary btn-sm" onclick="showCreateGroupView()">
+                            <i class="fas fa-plus"></i> Crear Nuevo Grupo
+                        </button>
+                    </div>
+
+                    <div id="groupsListContainer" style="max-height: 500px; overflow-y: auto;">
+                        <!-- Grupos se cargarán aquí dinámicamente -->
+                    </div>
+
+                    <div id="noGroupsMessage" style="text-align: center; padding: 3rem; color: var(--color-ochagrey); display: none;">
+                        <i class="fas fa-folder-open" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                        <p style="margin: 0;">No hay grupos creados aún.</p>
+                        <p style="font-size: 0.9rem; margin-top: 0.5rem;">Crea tu primer grupo para organizar contactos.</p>
                     </div>
                 </div>
 
-                <!-- Crear nuevo grupo -->
-                <div style="border-top: 1px solid #eee; padding-top: 1.5rem; margin-top: 1.5rem;">
-                    <h5 style="color: var(--color-ochablue); margin-bottom: 1rem;"><i class="fas fa-plus"></i> Crear Nuevo Grupo</h5>
-                    
-                    <!-- Lista de contactos seleccionados -->
-                    <div id="selectedContactsList"></div> 
-                    
-                    <!-- Formulario para nuevo grupo -->
+                <!-- NIVEL 2: EDICIÓN/CREACIÓN DE GRUPO -->
+                <div id="groupEditView" class="groups-view" style="display: none;">
+                    <button class="btn btn-secondary btn-sm" onclick="showGroupsListView()" style="margin-bottom: 1rem;">
+                        <i class="fas fa-arrow-left"></i> Volver a la lista
+                    </button>
+
+                    <input type="hidden" id="editingGroupId" value="">
+
                     <div class="form-group">
-                        <label class="form-label">Nombre del Grupo:</label>
-                        <input type="text" id="groupName" class="form-control" placeholder="Ej: Coordinadores Sector Salud">
+                        <label class="form-label">
+                            <i class="fas fa-tag"></i> Nombre del Grupo *
+                        </label>
+                        <input type="text" id="editGroupNameInput" class="form-control"
+                               placeholder="Ej: Coordinadores Sector Salud" required>
                     </div>
+
                     <div class="form-group">
-                        <label class="form-label">Descripción:</label>
-                        <textarea id="groupDescription" class="form-control" rows="3" placeholder="Descripción del propósito del grupo..."></textarea>
+                        <label class="form-label">
+                            <i class="fas fa-align-left"></i> Descripción
+                        </label>
+                        <textarea id="editGroupDescInput" class="form-control" rows="2"
+                                  placeholder="Descripción del propósito del grupo (opcional)"></textarea>
                     </div>
+
+                    <div style="border-top: 2px solid var(--ocha-light-gray); padding-top: 1.5rem; margin-top: 1.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h6 style="margin: 0; color: var(--color-ochablue);">
+                                <i class="fas fa-user-friends"></i> Miembros del Grupo
+                            </h6>
+                            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                                <input type="text" id="memberSearchInput" class="form-control"
+                                       placeholder="Buscar contacto..."
+                                       style="width: 200px; padding: 0.4rem 0.8rem; font-size: 0.9rem;"
+                                       oninput="filterMembersList()">
+                                <button class="btn btn-sm btn-success" onclick="toggleOnlyMembers()" title="Seleccionar solo los miembros actuales del grupo">
+                                    <i class="fas fa-user-check"></i> Miembros
+                                </button>
+                                <button class="btn btn-sm btn-warning" onclick="toggleOnlyNonMembers()" title="Seleccionar solo los que NO son miembros">
+                                    <i class="fas fa-user-plus"></i> No Miembros
+                                </button>
+                                <button class="btn btn-sm btn-info" onclick="toggleAllMembers(true)" title="Seleccionar todos los contactos">
+                                    <i class="fas fa-check-double"></i> Todos
+                                </button>
+                                <button class="btn btn-sm btn-secondary" onclick="toggleAllMembers(false)" title="Deseleccionar todos">
+                                    <i class="fas fa-times"></i> Ninguno
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="membersList" style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px; padding: 1rem; background: #fafafa;">
+                            <!-- Lista de contactos con checkboxes se cargará aquí -->
+                        </div>
+
+                        <div id="membersCount" style="margin-top: 1rem; padding: 0.75rem; background: var(--ocha-light-blue); border-radius: 6px; text-align: center; font-weight: 600; color: var(--color-ochablue);">
+                            <i class="fas fa-users"></i> 0 miembros seleccionados
+                        </div>
+                    </div>
+
+                    <div id="groupEditMessage" class="status-message" style="margin-top: 1rem;"></div>
                 </div>
-                
+
                 <div id="groupModalMessage" class="status-message"></div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeGroupModal()">Cancelar</button>
-                <button type="button" class="btn btn-primary" onclick="saveGroup()">
-                    <i class="fas fa-save"></i> Guardar Grupo
-                </button>
+
+            <div class="modal-footer" id="groupModalFooter">
+                <!-- Botones dinámicos según la vista activa -->
+                <button type="button" class="btn btn-secondary" onclick="closeGroupModal()">Cerrar</button>
             </div>
         </div>
     </div>
@@ -2581,13 +2763,20 @@ function setupSectorIcons() {
                 organizacionFilter.appendChild(option);
             });
 
-            // Filtro de espacios
+            // Filtro de espacios - Divide valores múltiples separados por coma
             const espacioFilter = document.getElementById('espacioFilter');
             espacioFilter.innerHTML = '<option value="">Todos los grupos</option>';
-            const availableSpaces = contacts.length > 0 
-                ? [...new Set(contacts.map(c => c.espacio_coordinacion).filter(Boolean))].sort()
-                : espaciosList; 
-            
+
+            // Dividir cada campo espacio_coordinacion en valores individuales
+            const availableSpaces = contacts.length > 0
+                ? [...new Set(
+                    contacts
+                        .map(c => getEspaciosAsArray(c.espacio_coordinacion))  // Divide por comas
+                        .flat()  // Aplasta array de arrays a un solo array
+                        .filter(Boolean)  // Elimina valores vacíos
+                  )].sort()
+                : espaciosList;
+
             availableSpaces.forEach(espacio => {
                 const option = document.createElement('option');
                 option.value = espacio;
@@ -3109,61 +3298,123 @@ function updateSelectionButtons() {
             updateSelectionControls();
         }
 
+        // MODIFICADO: Crear grupo directamente sin contraseña
         function createGroupFromSelection() {
             if (selectedContacts.size === 0) {
                 showAppMessage('Seleccione al menos un contacto para crear un grupo', 'error');
                 return;
             }
-            
-            pendingAdminAction = 'createGroup'; 
-            document.getElementById('adminActionMessage').textContent = 'Por favor, ingresa la clave de administrador para crear grupos.';
-            document.getElementById('adminPasswordModal').classList.add('active');
+
+            // Abrir modal directamente con contactos pre-seleccionados
+            showGroupModal(selectedContacts);
         }
 
-        function showGroupModal() {
-            const selectedContactsList = document.getElementById('selectedContactsList');
-            const selectedContactsArray = Array.from(selectedContacts).map(id => 
-                contacts.find(c => c.id === id)
-            ).filter(Boolean);
-            
-            selectedContactsList.innerHTML = `
-                <h5>Contactos seleccionados (${selectedContactsArray.length}):</h5>
-                <ul style="max-height: 150px; overflow-y: auto; margin: 0.5rem 0;">
-                    ${selectedContactsArray.map(contact => 
-                        `<li style="margin-bottom: 0.25rem;">${contact.organizacion} - ${contact.punto_focal} (${contact.email})</li>`
-                    ).join('')}
-                </ul>
+        // NUEVO: Modal de Gestión Avanzada de Grupos - Navegación entre vistas
+        function showGroupModal(preselectedContactIds = null) {
+            // Si hay contactos pre-seleccionados, abrir en modo creación
+            if (preselectedContactIds && preselectedContactIds.size > 0) {
+                document.getElementById('groupModal').classList.add('active');
+                showCreateGroupViewWithPreselection(Array.from(preselectedContactIds));
+            } else {
+                // Resetear el modal a la vista de lista
+                showGroupsListView();
+                // Cargar grupos en la lista
+                loadGroupsIntoModal();
+                // Mostrar el modal
+                document.getElementById('groupModal').classList.add('active');
+            }
+        }
+
+        // NUEVO: Mostrar vista de creación con contactos pre-seleccionados
+        async function showCreateGroupViewWithPreselection(preselectedIds) {
+            document.getElementById('groupsListView').style.display = 'none';
+            document.getElementById('groupEditView').style.display = 'block';
+            document.getElementById('groupModalTitle').innerHTML = '<i class="fas fa-plus-circle"></i> Crear Nuevo Grupo';
+
+            // Limpiar formulario
+            document.getElementById('editingGroupId').value = '';
+            document.getElementById('editGroupNameInput').value = '';
+            document.getElementById('editGroupDescInput').value = '';
+
+            // Cargar lista de miembros
+            await loadMembersList(null);
+
+            // Pre-seleccionar los contactos
+            preselectedIds.forEach(contactId => {
+                const checkbox = document.querySelector(`#membersList input[value="${contactId}"]`);
+                if (checkbox) {
+                    checkbox.checked = true;
+                    toggleMemberCheckbox(checkbox);
+                }
+            });
+
+            // Actualizar botones del footer
+            const footer = document.getElementById('groupModalFooter');
+            footer.innerHTML = `
+                <button type="button" class="btn btn-secondary" onclick="showGroupsListView()">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="saveGroupChanges()">
+                    <i class="fas fa-save"></i> Crear Grupo
+                </button>
             `;
 
-            // Cargar grupos existentes
-            loadExistingGroups();
-            
-            document.getElementById('groupModal').classList.add('active');
+            clearGroupMessages();
         }
 
-        function loadExistingGroups() {
-            const groupsContainer = document.getElementById('groupsContainer');
-            
+        // NUEVO: Mostrar vista de lista de grupos
+        function showGroupsListView() {
+            document.getElementById('groupsListView').style.display = 'block';
+            document.getElementById('groupEditView').style.display = 'none';
+            document.getElementById('groupModalTitle').innerHTML = '<i class="fas fa-users"></i> Gestión de Grupos';
+
+            // Actualizar botones del footer
+            const footer = document.getElementById('groupModalFooter');
+            footer.innerHTML = '<button type="button" class="btn btn-secondary" onclick="closeGroupModal()">Cerrar</button>';
+
+            // Limpiar mensajes
+            clearGroupMessages();
+        }
+
+        // NUEVO: Cargar grupos en el modal (vista de lista)
+        function loadGroupsIntoModal() {
+            const container = document.getElementById('groupsListContainer');
+            const noGroupsMsg = document.getElementById('noGroupsMessage');
+
             if (savedGroups.length === 0) {
-                groupsContainer.innerHTML = '<p style="color: var(--color-ochagrey); font-style: italic;">No hay grupos creados aún.</p>';
+                container.innerHTML = '';
+                noGroupsMsg.style.display = 'block';
                 return;
             }
 
-            groupsContainer.innerHTML = '';
-            savedGroups.forEach((group, index) => {
-                const groupItem = document.createElement('div');
-                groupItem.className = 'group-item';
-                groupItem.onclick = () => selectGroup(index);
-                
-                groupItem.innerHTML = `
-                    <div class="group-item-header">
-                        <div class="group-item-name">${group.name}</div>
-                        <div class="group-item-count">${group.contacts.length} contactos</div>
+            noGroupsMsg.style.display = 'none';
+            container.innerHTML = '';
+
+            savedGroups.forEach((group) => {
+                const card = document.createElement('div');
+                card.className = 'group-list-card';
+                card.innerHTML = `
+                    <div class="group-list-card-header">
+                        <div style="flex: 1;">
+                            <h4 class="group-list-card-title">
+                                <i class="fas fa-folder"></i> ${group.name}
+                            </h4>
+                            <span class="group-list-card-count">
+                                <i class="fas fa-users"></i> ${group.contact_ids ? group.contact_ids.length : 0} miembros
+                            </span>
+                        </div>
                     </div>
-                    <div class="group-item-description">${group.description || 'Sin descripción'}</div>
+                    <div class="group-list-card-description">
+                        ${group.description || '<em style="color: #999;">Sin descripción</em>'}
+                    </div>
+                    <div class="group-list-card-actions">
+                        <button class="btn btn-sm btn-primary" onclick="showEditGroupView('${group.id}')">
+                            <i class="fas fa-edit"></i> Editar
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteGroup('${group.id}')">
+                            <i class="fas fa-trash-alt"></i> Eliminar
+                        </button>
+                    </div>
                 `;
-                
-                groupsContainer.appendChild(groupItem);
+                container.appendChild(card);
             });
         }
 
@@ -3173,13 +3424,324 @@ function updateSelectionButtons() {
 
             // Mostrar información del grupo seleccionado
             showAppMessage(`Grupo seleccionado: ${group.name} (${group.contacts.length} contactos)`, 'info');
-            
+
             // Aquí podrías agregar más funcionalidad, como:
             // - Enviar email a todos los contactos del grupo
             // - Editar el grupo
             // - Eliminar el grupo
             // - Exportar lista del grupo
         }
+
+        // ============ NUEVAS FUNCIONES PARA GESTIÓN AVANZADA DE GRUPOS ============
+
+        // NUEVO: Mostrar vista de creación de grupo
+        function showCreateGroupView() {
+            document.getElementById('groupsListView').style.display = 'none';
+            document.getElementById('groupEditView').style.display = 'block';
+            document.getElementById('groupModalTitle').innerHTML = '<i class="fas fa-plus-circle"></i> Crear Nuevo Grupo';
+
+            // Limpiar formulario
+            document.getElementById('editingGroupId').value = '';
+            document.getElementById('editGroupNameInput').value = '';
+            document.getElementById('editGroupDescInput').value = '';
+
+            // Cargar lista de miembros (ninguno seleccionado)
+            loadMembersList(null);
+
+            // Actualizar botones del footer
+            const footer = document.getElementById('groupModalFooter');
+            footer.innerHTML = `
+                <button type="button" class="btn btn-secondary" onclick="showGroupsListView()">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="saveGroupChanges()">
+                    <i class="fas fa-save"></i> Crear Grupo
+                </button>
+            `;
+
+            clearGroupMessages();
+        }
+
+        // NUEVO: Mostrar vista de edición de grupo
+        async function showEditGroupView(groupId) {
+            const group = savedGroups.find(g => g.id === groupId);
+            if (!group) {
+                showAppMessage('Grupo no encontrado', 'error');
+                return;
+            }
+
+            document.getElementById('groupsListView').style.display = 'none';
+            document.getElementById('groupEditView').style.display = 'block';
+            document.getElementById('groupModalTitle').innerHTML = '<i class="fas fa-edit"></i> Editar Grupo';
+
+            // Cargar datos del grupo
+            document.getElementById('editingGroupId').value = groupId;
+            document.getElementById('editGroupNameInput').value = group.name;
+            document.getElementById('editGroupDescInput').value = group.description || '';
+
+            // Cargar lista de miembros con los actuales marcados
+            await loadMembersList(groupId);
+
+            // Actualizar botones del footer
+            const footer = document.getElementById('groupModalFooter');
+            footer.innerHTML = `
+                <button type="button" class="btn btn-secondary" onclick="showGroupsListView()">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="saveGroupChanges()">
+                    <i class="fas fa-save"></i> Guardar Cambios
+                </button>
+            `;
+
+            clearGroupMessages();
+        }
+
+        // NUEVO: Cargar lista de todos los contactos con checkboxes
+        async function loadMembersList(groupId) {
+            const container = document.getElementById('membersList');
+            container.innerHTML = '<div style="text-align: center; padding: 2rem;"><i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: var(--color-ochablue);"></i></div>';
+
+            try {
+                console.log(`🔍 Cargando miembros para grupo ID: ${groupId} (tipo: ${typeof groupId})`);
+
+                // Obtener IDs de miembros actuales del grupo
+                let currentMemberIds = [];
+                if (groupId) {
+                    const { data: members, error } = await sb
+                        .from('contact_group_members')
+                        .select('contact_id')
+                        .eq('group_id', groupId);
+
+                    if (error) {
+                        console.error('❌ Error obteniendo miembros:', error);
+                        throw error;
+                    }
+
+                    currentMemberIds = members.map(m => m.contact_id);
+                    console.log(`✅ Miembros actuales del grupo:`, currentMemberIds);
+                    console.log(`   Tipo de IDs de miembros:`, currentMemberIds.length > 0 ? typeof currentMemberIds[0] : 'N/A');
+                }
+
+                // Guardar miembros originales para los botones de selección inteligente
+                originalMemberIds = [...currentMemberIds];
+
+                // Crear lista de todos los contactos
+                container.innerHTML = '';
+
+                if (contacts.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: var(--color-ochagrey); padding: 2rem;">No hay contactos disponibles</p>';
+                    return;
+                }
+
+                console.log(`📋 Total contactos disponibles: ${contacts.length}`);
+                console.log(`   Tipo de IDs de contactos:`, contacts.length > 0 ? typeof contacts[0].id : 'N/A');
+                console.log(`   Ejemplo ID contacto:`, contacts.length > 0 ? contacts[0].id : 'N/A');
+
+                let checkedCount = 0;
+
+                contacts.forEach(contact => {
+                    // Comparación robusta: convertir ambos a string para comparar
+                    const isChecked = currentMemberIds.some(memberId =>
+                        String(memberId) === String(contact.id)
+                    );
+
+                    if (isChecked) checkedCount++;
+
+                    const checkboxId = `member-${contact.id}`;
+
+                    const item = document.createElement('div');
+                    item.className = `member-checkbox-item ${isChecked ? 'checked' : ''}`;
+                    item.onclick = function(e) {
+                        if (e.target.tagName !== 'INPUT') {
+                            const checkbox = this.querySelector('input[type="checkbox"]');
+                            checkbox.checked = !checkbox.checked;
+                            toggleMemberCheckbox(checkbox);
+                        }
+                    };
+
+                    item.innerHTML = `
+                        <input type="checkbox" id="${checkboxId}"
+                               value="${contact.id}"
+                               ${isChecked ? 'checked' : ''}
+                               onclick="event.stopPropagation(); toggleMemberCheckbox(this)">
+                        <label for="${checkboxId}">
+                            <div class="member-checkbox-name">${contact.punto_focal || 'Sin nombre'}</div>
+                            <div class="member-checkbox-org">
+                                <i class="fas fa-building"></i> ${contact.organizacion || 'Sin organización'}
+                                ${contact.email ? `<span style="margin-left: 0.5rem;">• ${contact.email}</span>` : ''}
+                            </div>
+                        </label>
+                    `;
+
+                    container.appendChild(item);
+                });
+
+                console.log(`✅ ${checkedCount} checkboxes marcados de ${contacts.length} contactos`);
+
+                updateMembersCount();
+
+            } catch (error) {
+                console.error('❌ Error cargando miembros:', error);
+                container.innerHTML = '<p style="text-align: center; color: var(--ocha-red); padding: 2rem;">Error al cargar contactos</p>';
+            }
+        }
+
+        // NUEVO: Toggle checkbox de miembro
+        function toggleMemberCheckbox(checkbox) {
+            const item = checkbox.closest('.member-checkbox-item');
+            if (checkbox.checked) {
+                item.classList.add('checked');
+            } else {
+                item.classList.remove('checked');
+            }
+            updateMembersCount();
+        }
+
+        // NUEVO: Actualizar contador de miembros seleccionados
+        function updateMembersCount() {
+            const checkedBoxes = document.querySelectorAll('#membersList input[type="checkbox"]:checked');
+            const count = checkedBoxes.length;
+            const countElement = document.getElementById('membersCount');
+            countElement.innerHTML = `<i class="fas fa-users"></i> ${count} miembro${count !== 1 ? 's' : ''} seleccionado${count !== 1 ? 's' : ''}`;
+        }
+
+        // Variable global para rastrear miembros originales
+        let originalMemberIds = [];
+
+        // MODIFICADO: Seleccionar/Deseleccionar todos (primero restaura vista completa)
+        function toggleAllMembers(select) {
+            // Primero, mostrar todos los items
+            showAllMembers();
+
+            // Luego seleccionar o deseleccionar
+            const checkboxes = document.querySelectorAll('#membersList input[type="checkbox"]');
+            const items = document.querySelectorAll('#membersList .member-checkbox-item');
+
+            checkboxes.forEach((checkbox, index) => {
+                checkbox.checked = select;
+                if (select) {
+                    items[index]?.classList.add('checked');
+                } else {
+                    items[index]?.classList.remove('checked');
+                }
+            });
+
+            updateMembersCount();
+        }
+
+        // NUEVO: Mostrar todos los miembros (restaurar vista completa)
+        function showAllMembers() {
+            const items = document.querySelectorAll('#membersList .member-checkbox-item');
+            items.forEach(item => {
+                item.style.display = 'flex';
+            });
+        }
+
+        // MODIFICADO: Seleccionar Y FILTRAR solo los miembros actuales del grupo
+        function toggleOnlyMembers() {
+            // Limpiar búsqueda primero
+            document.getElementById('memberSearchInput').value = '';
+
+            const checkboxes = document.querySelectorAll('#membersList input[type="checkbox"]');
+            const items = document.querySelectorAll('#membersList .member-checkbox-item');
+            let visibleCount = 0;
+
+            checkboxes.forEach((checkbox, index) => {
+                const contactId = checkbox.value;
+                const item = items[index];
+
+                // Comparación robusta: convertir a string
+                const isMember = originalMemberIds.some(memberId =>
+                    String(memberId) === String(contactId)
+                );
+
+                if (isMember) {
+                    // ES MIEMBRO: Mostrar y seleccionar
+                    checkbox.checked = true;
+                    item?.classList.add('checked');
+                    if (item) {
+                        item.style.display = 'flex';
+                        visibleCount++;
+                    }
+                } else {
+                    // NO ES MIEMBRO: Ocultar
+                    checkbox.checked = false;
+                    item?.classList.remove('checked');
+                    if (item) {
+                        item.style.display = 'none';
+                    }
+                }
+            });
+
+            updateMembersCount();
+            showAppMessage(`✅ Mostrando solo los ${visibleCount} miembros actuales del grupo`, 'info');
+        }
+
+        // MODIFICADO: Seleccionar Y FILTRAR solo los NO miembros
+        function toggleOnlyNonMembers() {
+            // Limpiar búsqueda primero
+            document.getElementById('memberSearchInput').value = '';
+
+            const checkboxes = document.querySelectorAll('#membersList input[type="checkbox"]');
+            const items = document.querySelectorAll('#membersList .member-checkbox-item');
+            let visibleCount = 0;
+
+            checkboxes.forEach((checkbox, index) => {
+                const contactId = checkbox.value;
+                const item = items[index];
+
+                // Comparación robusta: convertir a string
+                const isMember = originalMemberIds.some(memberId =>
+                    String(memberId) === String(contactId)
+                );
+
+                if (!isMember) {
+                    // NO ES MIEMBRO: Mostrar y seleccionar
+                    checkbox.checked = true;
+                    item?.classList.add('checked');
+                    if (item) {
+                        item.style.display = 'flex';
+                        visibleCount++;
+                    }
+                } else {
+                    // ES MIEMBRO: Ocultar
+                    checkbox.checked = false;
+                    item?.classList.remove('checked');
+                    if (item) {
+                        item.style.display = 'none';
+                    }
+                }
+            });
+
+            updateMembersCount();
+            showAppMessage(`✅ Mostrando solo ${visibleCount} contactos que NO son miembros (listos para añadir)`, 'info');
+        }
+
+        // NUEVO: Filtrar lista de miembros por búsqueda
+        function filterMembersList() {
+            const searchTerm = document.getElementById('memberSearchInput').value.toLowerCase();
+            const items = document.querySelectorAll('#membersList .member-checkbox-item');
+
+            items.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        // NUEVO: Limpiar mensajes del modal de grupos
+        function clearGroupMessages() {
+            const messages = ['groupModalMessage', 'groupEditMessage'];
+            messages.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.textContent = '';
+                    element.className = 'status-message';
+                    element.style.display = 'none';
+                }
+            });
+        }
+
+        // ============ FIN NUEVAS FUNCIONES ============
 
 async function saveGroup() {
             const groupName = document.getElementById('groupName').value.trim();
@@ -3248,15 +3810,167 @@ async function saveGroup() {
             }
         }
 
+        // NUEVO: Guardar cambios de grupo (crear o editar) con gestión de membresía
+        async function saveGroupChanges() {
+            const groupId = document.getElementById('editingGroupId').value;
+            const groupName = document.getElementById('editGroupNameInput').value.trim();
+            const groupDesc = document.getElementById('editGroupDescInput').value.trim();
+
+            // Validar nombre
+            if (!groupName) {
+                const message = document.getElementById('groupEditMessage');
+                message.textContent = 'El nombre del grupo es obligatorio';
+                message.className = 'status-message status-error';
+                message.style.display = 'block';
+                return;
+            }
+
+            // Obtener miembros seleccionados (TODOS los marcados, incluso si están ocultos)
+            // IMPORTANTE: Los IDs son UUIDs (strings), NO integers
+            const selectedMemberIds = Array.from(
+                document.querySelectorAll('#membersList input[type="checkbox"]:checked')
+            ).map(cb => cb.value);
+
+            console.log('💾 IDs seleccionados para guardar (UUIDs):', selectedMemberIds);
+
+            if (selectedMemberIds.length === 0) {
+                const message = document.getElementById('groupEditMessage');
+                message.textContent = 'Debe seleccionar al menos un miembro para el grupo';
+                message.className = 'status-message status-error';
+                message.style.display = 'block';
+                return;
+            }
+
+            // Deshabilitar botón de guardar
+            const saveBtn = document.querySelector('#groupModalFooter .btn-primary');
+            const originalBtnHtml = saveBtn.innerHTML;
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+
+            try {
+                if (groupId) {
+                    // EDITAR GRUPO EXISTENTE
+                    await updateExistingGroup(groupId, groupName, groupDesc, selectedMemberIds);
+                } else {
+                    // CREAR NUEVO GRUPO
+                    await createNewGroup(groupName, groupDesc, selectedMemberIds);
+                }
+
+                showAppMessage(`Grupo "${groupName}" guardado exitosamente`, 'success');
+                await loadGroupsFromSupabase(); // Recargar grupos
+                showGroupsListView(); // Volver a la lista
+
+            } catch (error) {
+                console.error('Error guardando grupo:', error);
+                const message = document.getElementById('groupEditMessage');
+                message.textContent = 'Error al guardar el grupo: ' + error.message;
+                message.className = 'status-message status-error';
+                message.style.display = 'block';
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = originalBtnHtml;
+            }
+        }
+
+        // NUEVO: Crear nuevo grupo
+        async function createNewGroup(name, description, memberIds) {
+            // 1. Crear el grupo
+            const { data: newGroup, error: groupError } = await sb
+                .from('contact_groups')
+                .insert([{
+                    name: name,
+                    description: description,
+                    created_by: currentUser?.id || null
+                }])
+                .select()
+                .single();
+
+            if (groupError) throw groupError;
+
+            // 2. Insertar miembros
+            const members = memberIds.map(contactId => ({
+                group_id: newGroup.id,
+                contact_id: contactId
+            }));
+
+            const { error: membersError } = await sb
+                .from('contact_group_members')
+                .insert(members);
+
+            if (membersError) throw membersError;
+        }
+
+        // NUEVO: Actualizar grupo existente
+        async function updateExistingGroup(groupId, name, description, newMemberIds) {
+            // 1. Actualizar nombre y descripción del grupo
+            const { error: updateError } = await sb
+                .from('contact_groups')
+                .update({
+                    name: name,
+                    description: description
+                })
+                .eq('id', groupId);
+
+            if (updateError) throw updateError;
+
+            // 2. Obtener miembros actuales
+            const { data: currentMembers, error: membersError } = await sb
+                .from('contact_group_members')
+                .select('contact_id')
+                .eq('group_id', groupId);
+
+            if (membersError) throw membersError;
+
+            const currentMemberIds = currentMembers.map(m => m.contact_id);
+
+            // 3. Calcular diferencias (comparación robusta de UUIDs como strings)
+            const toAdd = newMemberIds.filter(id =>
+                !currentMemberIds.some(memberId => String(memberId) === String(id))
+            );
+            const toRemove = currentMemberIds.filter(id =>
+                !newMemberIds.some(newId => String(newId) === String(id))
+            );
+
+            // 4. Eliminar miembros que ya no están
+            if (toRemove.length > 0) {
+                const { error: deleteError } = await sb
+                    .from('contact_group_members')
+                    .delete()
+                    .eq('group_id', groupId)
+                    .in('contact_id', toRemove);
+
+                if (deleteError) throw deleteError;
+            }
+
+            // 5. Añadir nuevos miembros
+            if (toAdd.length > 0) {
+                const newMembers = toAdd.map(contactId => ({
+                    group_id: groupId,
+                    contact_id: contactId
+                }));
+
+                const { error: insertError } = await sb
+                    .from('contact_group_members')
+                    .insert(newMembers);
+
+                if (insertError) throw insertError;
+            }
+        }
+
+        // MODIFICADO: Cerrar modal de grupos
         function closeGroupModal() {
             document.getElementById('groupModal').classList.remove('active');
-            document.getElementById('selectedContactsList').innerHTML = '';
-            document.getElementById('groupName').value = '';
-            document.getElementById('groupDescription').value = '';
-            const groupModalMessage = document.getElementById('groupModalMessage');
-            groupModalMessage.textContent = '';
-            groupModalMessage.className = 'status-message';
-            groupModalMessage.style.display = 'none';
+
+            // Limpiar vistas
+            showGroupsListView();
+
+            // Limpiar campos de edición
+            document.getElementById('editingGroupId').value = '';
+            document.getElementById('editGroupNameInput').value = '';
+            document.getElementById('editGroupDescInput').value = '';
+            document.getElementById('membersList').innerHTML = '';
+            document.getElementById('memberSearchInput').value = '';
+
+            clearGroupMessages();
         }
 
         function sendEmailToSelection() {
@@ -3479,15 +4193,42 @@ async function saveGroup() {
             document.getElementById('contactModal').classList.add('active');
         }
 
+        // MODIFICADO: Eliminación sin contraseña - Solo confirmación simple
         async function deleteContact(id) {
             pendingDeleteId = id;
             const contact = contacts.find(c => c.id === id);
-            
-            pendingAdminAction = 'delete'; 
-            document.getElementById('adminActionMessage').textContent = 'Por favor, ingresa la clave de administrador para eliminar este contacto.';
-            document.getElementById('adminPasswordModal').classList.add('active');
+
+            if (!contact) {
+                showAppMessage('Contacto no encontrado', 'error');
+                return;
+            }
+
+            // Mostrar información del contacto en el modal
+            const deleteContactInfo = document.getElementById('deleteContactInfo');
+            deleteContactInfo.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <i class="fas fa-user-circle" style="font-size: 2.5rem; color: var(--color-ochablue);"></i>
+                    <div style="flex: 1;">
+                        <p style="margin: 0; font-weight: 700; font-size: 1.1rem; color: var(--color-ochablue);">
+                            ${contact.punto_focal || 'Sin nombre'}
+                        </p>
+                        <p style="margin: 0.25rem 0 0 0; color: var(--color-ochagrey); font-size: 0.95rem;">
+                            <i class="fas fa-building" style="margin-right: 0.5rem;"></i>
+                            ${contact.organizacion || 'Sin organización'}
+                        </p>
+                        <p style="margin: 0.25rem 0 0 0; color: var(--color-ochagrey); font-size: 0.9rem;">
+                            <i class="fas fa-envelope" style="margin-right: 0.5rem;"></i>
+                            ${contact.email || 'Sin email'}
+                        </p>
+                    </div>
+                </div>
+            `;
+
+            // Mostrar el modal de confirmación
+            document.getElementById('deleteContactModal').classList.add('active');
         }
 
+        // MODIFICADO: Solo para crear grupos (la eliminación de contactos ya no requiere contraseña)
         function confirmAdminAction() {
             const passwordInput = document.getElementById('adminPassword');
             const adminPasswordError = document.getElementById('adminPasswordError');
@@ -3499,14 +4240,11 @@ async function saveGroup() {
                 passwordInput.value = '';
                 document.getElementById('adminPasswordModal').classList.remove('active');
 
-                // Ejecutar la acción pendiente
-                if (pendingAdminAction === 'delete' && pendingDeleteId) {
-                    performDelete(pendingDeleteId);
-                    pendingDeleteId = null;
-                } else if (pendingAdminAction === 'createGroup') {
-                    showGroupModal();
+                // Ejecutar la acción pendiente (solo crear grupo con contactos pre-seleccionados)
+                if (pendingAdminAction === 'createGroup') {
+                    showGroupModal(selectedContacts); // Pasar contactos seleccionados
                 }
-                
+
                 pendingAdminAction = null;
             } else {
                 adminPasswordError.textContent = 'Clave de administrador incorrecta.';
@@ -3514,13 +4252,13 @@ async function saveGroup() {
             }
         }
 
+        // MODIFICADO: Ya no maneja pendingDeleteId (solo para crear grupos)
         function closeAdminPasswordModal() {
             document.getElementById('adminPasswordModal').classList.remove('active');
             document.getElementById('adminPassword').value = '';
             const adminPasswordError = document.getElementById('adminPasswordError');
             adminPasswordError.textContent = '';
             adminPasswordError.style.display = 'none';
-            pendingDeleteId = null;
             pendingAdminAction = null;
         }
 
@@ -3533,6 +4271,48 @@ async function saveGroup() {
                 await loadContacts();
             } catch (error) {
                 showAppMessage('Error eliminando contacto: ' + error.message, 'error');
+            }
+        }
+
+        // NUEVO: Función para confirmar eliminación desde el modal simple
+        async function confirmDeleteContact() {
+            if (!pendingDeleteId) {
+                closeDeleteContactModal();
+                return;
+            }
+
+            const deleteBtn = document.querySelector('#deleteContactModal .btn-danger');
+            deleteBtn.disabled = true;
+            deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Eliminando...';
+
+            try {
+                await performDelete(pendingDeleteId);
+                closeDeleteContactModal();
+                pendingDeleteId = null;
+            } catch (error) {
+                const message = document.getElementById('deleteContactModalMessage');
+                message.textContent = 'Error al eliminar el contacto: ' + error.message;
+                message.className = 'status-message status-error';
+                message.style.display = 'block';
+                deleteBtn.disabled = false;
+                deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Sí, Eliminar';
+            }
+        }
+
+        // NUEVO: Función para cerrar el modal de confirmación de eliminación
+        function closeDeleteContactModal() {
+            document.getElementById('deleteContactModal').classList.remove('active');
+            document.getElementById('deleteContactInfo').innerHTML = '';
+            const message = document.getElementById('deleteContactModalMessage');
+            message.textContent = '';
+            message.style.display = 'none';
+            pendingDeleteId = null;
+
+            // Restaurar el botón
+            const deleteBtn = document.querySelector('#deleteContactModal .btn-danger');
+            if (deleteBtn) {
+                deleteBtn.disabled = false;
+                deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Sí, Eliminar';
             }
         }
 
@@ -3937,16 +4717,21 @@ function showLoginPage() {
 }
 async function loadGroups() {
             try {
+                console.log('🔄 Cargando grupos desde Supabase...');
                 // 1. Cargar grupos
                 const { data: groups, error: groupsError } = await sb
                     .from('contact_groups')
                     .select('*')
                     .order('created_at', { ascending: false });
-                    
+
                 if (groupsError) throw groupsError;
+
+                console.log(`📦 Grupos cargados:`, groups);
 
                 // 2. Para cada grupo, cargar sus contactos
                 savedGroups = await Promise.all((groups || []).map(async (group) => {
+                    console.log(`  👥 Cargando miembros del grupo "${group.name}" (ID: ${group.id}, tipo: ${typeof group.id})`);
+
                     // Obtener IDs de contactos del grupo
                     const { data: members, error: membersError } = await sb
                         .from('contact_group_members')
@@ -3954,28 +4739,95 @@ async function loadGroups() {
                         .eq('group_id', group.id);
 
                     if (membersError) {
-                        console.error('Error cargando miembros del grupo:', membersError);
+                        console.error('❌ Error cargando miembros del grupo:', membersError);
                         return { ...group, contacts: [], contact_ids: [] };
                     }
 
                     const contactIds = members.map(m => m.contact_id);
-                    const groupContacts = contacts.filter(c => contactIds.includes(c.id));
-                    
-                    return { 
-                        ...group, 
+                    // Comparación robusta: ambos son UUIDs (strings)
+                    const groupContacts = contacts.filter(c =>
+                        contactIds.some(memberId => String(memberId) === String(c.id))
+                    );
+
+                    console.log(`  ✅ Grupo "${group.name}": ${contactIds.length} miembros`);
+
+                    return {
+                        ...group,
                         contacts: groupContacts,
                         contact_ids: contactIds
                     };
                 }));
-                
+
                 setupGroupsFilter();
-                console.log(`Cargados ${savedGroups.length} grupos desde Supabase`);
+                console.log(`✅ ${savedGroups.length} grupos cargados exitosamente`);
             } catch (error) {
-                console.error('Error cargando grupos:', error);
+                console.error('❌ Error cargando grupos:', error);
                 showAppMessage('Error cargando grupos: ' + error.message, 'error');
                 savedGroups = [];
             }
         }
+
+        // Alias para compatibilidad
+        const loadGroupsFromSupabase = loadGroups;
+
+        // FUNCIÓN DE DIAGNÓSTICO - Ejecuta desde la consola: await diagnosticarGrupos()
+        async function diagnosticarGrupos() {
+            console.log('🔍 === DIAGNÓSTICO DE GRUPOS ===');
+
+            try {
+                // 1. Verificar grupos en Supabase
+                console.log('\n1️⃣ Consultando contact_groups en Supabase...');
+                const { data: grupos, error: errorGrupos } = await sb
+                    .from('contact_groups')
+                    .select('*');
+
+                if (errorGrupos) {
+                    console.error('❌ Error consultando grupos:', errorGrupos);
+                } else {
+                    console.log(`✅ Grupos en Supabase: ${grupos?.length || 0}`);
+                    grupos?.forEach(g => {
+                        console.log(`   📁 "${g.name}" (ID: ${g.id}, tipo: ${typeof g.id})`);
+                    });
+                }
+
+                // 2. Verificar miembros en Supabase
+                console.log('\n2️⃣ Consultando contact_group_members en Supabase...');
+                const { data: miembros, error: errorMiembros } = await sb
+                    .from('contact_group_members')
+                    .select('*');
+
+                if (errorMiembros) {
+                    console.error('❌ Error consultando miembros:', errorMiembros);
+                } else {
+                    console.log(`✅ Registros de membresía: ${miembros?.length || 0}`);
+                    console.log(`   Tipos de datos: group_id=${typeof miembros?.[0]?.group_id}, contact_id=${typeof miembros?.[0]?.contact_id}`);
+                }
+
+                // 3. Estado actual en memoria
+                console.log('\n3️⃣ Estado en memoria (savedGroups):');
+                console.log(`   Array length: ${savedGroups.length}`);
+                savedGroups.forEach(g => {
+                    console.log(`   📁 "${g.name}" con ${g.contacts?.length || 0} contactos`);
+                });
+
+                // 4. Verificar tipos de IDs de contactos
+                console.log('\n4️⃣ Tipos de IDs en contacts array:');
+                if (contacts.length > 0) {
+                    console.log(`   Total contactos cargados: ${contacts.length}`);
+                    console.log(`   Primer contacto ID: ${contacts[0].id} (tipo: ${typeof contacts[0].id})`);
+                } else {
+                    console.log('   ⚠️ Array de contactos vacío');
+                }
+
+                console.log('\n✅ Diagnóstico completado');
+                return { grupos, miembros, savedGroups, contacts };
+
+            } catch (error) {
+                console.error('❌ Error en diagnóstico:', error);
+                return { error };
+            }
+        }
+
         async function loadContacts() {
             try {
                 showAppMessage('Cargando contactos...', 'info', false);
@@ -4053,7 +4905,9 @@ async function loadGroups() {
                     if (contactOrg !== activeFilters.organizacion) return false;
                 }
                 
-                // Filtro de espacio - soporte múltiple
+                // FILTRO MULTIESPACIO: Un contacto puede aparecer en varios espacios sin duplicación
+                // Si un contacto pertenece a ["Protección", "Salud"], aparecerá en ambos filtros
+                // pero sigue siendo UN SOLO registro en la base de datos
 if (activeFilters.espacio) {
     const contactEspacios = getEspaciosAsArray(contact.espacio_coordinacion);
     const hasMatchingEspacio = contactEspacios.includes(activeFilters.espacio);
@@ -4114,11 +4968,16 @@ if (activeFilters.municipios.length > 0) {
     if (!hasMatchingMunicipio) return false;
 }
 
-// Filtro de grupo seleccionado
-if (activeFilters.selectedGroup !== null) {
+// FILTRO DE GRUPOS PERSONALIZADOS: Relación Many-to-Many
+                // Los grupos usan tabla intermedia 'contact_group_members'
+                // Permite que un contacto esté en múltiples grupos sin duplicar su información
+                if (activeFilters.selectedGroup !== null) {
     const selectedGroup = savedGroups.find(g => g.id === activeFilters.selectedGroup);
     if (selectedGroup && selectedGroup.contact_ids) {
-        const isInGroup = selectedGroup.contact_ids.includes(contact.id);
+        // Comparación robusta de UUIDs
+        const isInGroup = selectedGroup.contact_ids.some(groupContactId =>
+            String(groupContactId) === String(contact.id)
+        );
         if (!isInGroup) return false;
     } else {
         return false;
@@ -4532,7 +5391,7 @@ function setupGroupsFilter() {
             </div>
             <div class="group-filter-description">${group.description || 'Sin descripción'}</div>
             <div class="group-filter-actions">
-<button class="group-action-btn edit" onclick="editGroup('${group.id}')" title="Editar grupo">
+<button class="group-action-btn edit" onclick="openEditGroupFromSidebar('${group.id}')" title="Editar grupo y gestionar miembros">
                     <i class="fas fa-edit"></i>
                 </button>
                 <button class="group-action-btn delete" onclick="deleteGroup('${group.id}')" title="Eliminar grupo">
@@ -4545,9 +5404,17 @@ function setupGroupsFilter() {
     });
 }
 
+// NUEVO: Abrir modal de edición desde sidebar
+function openEditGroupFromSidebar(groupId) {
+    // Abrir el modal primero
+    document.getElementById('groupModal').classList.add('active');
+    // Luego mostrar la vista de edición
+    showEditGroupView(groupId);
+}
+
 function toggleGroupFilter(groupId) {
             const groupItems = document.querySelectorAll('.group-filter-item');
-            
+
             // Si ya está activo el mismo grupo, desactivar
             if (activeFilters.selectedGroup === groupId) {
                 activeFilters.selectedGroup = null;
@@ -4567,106 +5434,10 @@ function toggleGroupFilter(groupId) {
             applyFilters();
         }
 
-function editGroup(groupId) {
-            const group = savedGroups.find(g => g.id === groupId);
-            if (!group) {
-                showAppMessage('Grupo no encontrado', 'error');
-                return;
-            }
-            
-            currentEditingGroup = group;
-            
-            // Llenar el formulario
-            document.getElementById('editGroupId').value = group.id;
-            document.getElementById('editGroupName').value = group.name;
-            document.getElementById('editGroupDescription').value = group.description || '';
-            
-            // Mostrar lista de contactos
-            const contactsList = document.getElementById('editGroupContactsList');
-            contactsList.innerHTML = '';
-            
-            if (group.contacts && group.contacts.length > 0) {
-                group.contacts.forEach(contact => {
-                    const contactDiv = document.createElement('div');
-                    contactDiv.style.marginBottom = '0.5rem';
-                    contactDiv.style.fontSize = '0.9rem';
-                    contactDiv.innerHTML = `
-                        <strong>${contact.organizacion || 'Sin organización'}</strong> - ${contact.punto_focal || 'Sin punto focal'}
-                        <br><small style="color: #666;">${contact.email || 'Sin email'}</small>
-                    `;
-                    contactsList.appendChild(contactDiv);
-                });
-            } else {
-                contactsList.innerHTML = '<p style="color: #666; font-style: italic;">No hay contactos en este grupo</p>';
-            }
-            
-            document.getElementById('editGroupModal').classList.add('active');
-        }
-
-function closeEditGroupModal() {
-    document.getElementById('editGroupModal').classList.remove('active');
-    currentEditingGroup = null;
-    
-    // Limpiar formulario
-    document.getElementById('editGroupName').value = '';
-    document.getElementById('editGroupDescription').value = '';
-    document.getElementById('editGroupContactsList').innerHTML = '';
-    
-    const message = document.getElementById('editGroupModalMessage');
-    message.textContent = '';
-    message.className = 'status-message';
-    message.style.display = 'none';
-}
-
-async function updateGroup() {
-            const groupId = document.getElementById('editGroupId').value;
-            const newName = document.getElementById('editGroupName').value.trim();
-            const newDescription = document.getElementById('editGroupDescription').value.trim();
-            
-            if (!newName) {
-                const message = document.getElementById('editGroupModalMessage');
-                message.textContent = 'El nombre del grupo es obligatorio.';
-                message.className = 'status-message status-error';
-                message.style.display = 'block';
-                return;
-            }
-            
-            try {
-                const { data, error } = await sb
-                    .from('contact_groups')
-                    .update({
-                        name: newName,
-                        description: newDescription,
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('id', groupId)
-                    .select()
-                    .single();
-
-                if (error) throw error;
-
-                // Actualizar en el array local
-                const groupIndex = savedGroups.findIndex(g => g.id === groupId);
-                if (groupIndex !== -1) {
-                    savedGroups[groupIndex] = {
-                        ...savedGroups[groupIndex],
-                        ...data
-                    };
-                }
-
-                setupGroupsFilter();
-                
-                showAppMessage(`Grupo "${newName}" actualizado exitosamente`, 'success');
-                closeEditGroupModal();
-                
-            } catch (error) {
-                console.error('Error actualizando grupo:', error);
-                const message = document.getElementById('editGroupModalMessage');
-                message.textContent = 'Error al actualizar el grupo: ' + error.message;
-                message.className = 'status-message status-error';
-                message.style.display = 'block';
-            }
-        }
+// FUNCIONES ANTIGUAS ELIMINADAS - Ahora se usa el nuevo sistema unificado:
+// - showEditGroupView(groupId) - reemplaza a editGroup(groupId)
+// - saveGroupChanges() - reemplaza a updateGroup() y saveGroup()
+// - El modal unificado groupModal reemplaza a editGroupModal
 
 function deleteGroup(groupId) {
             const group = savedGroups.find(g => g.id === groupId);
@@ -4742,17 +5513,131 @@ async function confirmDeleteGroup() {
                 message.style.display = 'block';
             }
         }
+// ====== ARQUITECTURA MULTIESPACIO ======
+// IMPORTANTE: Los contactos pueden pertenecer a múltiples espacios/grupos sin duplicación
+//
+// DISEÑO IMPLEMENTADO:
+// 1. Espacios de Coordinación: Almacenados como string CSV en campo "espacio_coordinacion"
+//    Ejemplo: "Protección, Salud, Educación"
+//    - Cada contacto es UNA SOLA FILA en la tabla 'contacts'
+//    - Aparece en múltiples filtros sin duplicar el registro
+//
+// 2. Grupos Personalizados: Relación Many-to-Many vía tabla intermedia
+//    Tablas: contact_groups <-> contact_group_members <-> contacts
+//    - Un contacto puede estar en N grupos
+//    - Un grupo puede tener N contactos
+//    - Integridad referencial garantizada por CASCADE DELETE
+//
+// VENTAJAS:
+// - Sin duplicación de datos de contacto
+// - Consultas rápidas (un solo JOIN para grupos)
+// - Filtrado eficiente por espacio O(n) lineal
+// - Escalable para grandes volúmenes
+// ========================================
+
 // Función para obtener espacios de coordinación como array
 function getEspaciosAsArray(espacioString) {
     if (!espacioString) return [];
-    
+
     if (typeof espacioString === 'string') {
-        // Dividir por comas y limpiar espacios
-        return espacioString.split(',').map(e => e.trim()).filter(e => e.length > 0);
+        // Si tiene comas, dividir por comas (datos nuevos)
+        if (espacioString.includes(',')) {
+            return espacioString.split(',').map(e => e.trim()).filter(e => e.length > 0);
+        }
+
+        // Si NO tiene comas, dividir por patrones conocidos (datos legacy)
+        const text = espacioString.trim();
+
+        // Si el texto es corto (menos de 50 chars), probablemente es un solo valor
+        if (text.length < 50) {
+            return [text];
+        }
+
+        // Encontrar todas las posiciones donde inician los patrones conocidos
+        const patterns = [
+            'Foro Local de Coordinacion',
+            'Grupo de Coordinacion de',
+            'Grupo de Coordinacion',
+            'Cluster de',
+            'Cluster WASH',
+            'Grupo Tecnico',
+            'Grupo Intercluster',
+            'Grupo de Trabajo',
+            'Red '
+        ];
+
+        const splitPoints = [];
+
+        patterns.forEach(pattern => {
+            let index = 0;
+            while ((index = text.indexOf(pattern, index)) !== -1) {
+                splitPoints.push({ position: index, pattern: pattern });
+                index += pattern.length;
+            }
+        });
+
+        // Si no encontramos puntos de división, retornar el texto completo
+        if (splitPoints.length === 0) {
+            return [text];
+        }
+
+        // Ordenar por posición
+        splitPoints.sort((a, b) => a.position - b.position);
+
+        // Extraer segmentos entre los puntos de división
+        const segments = [];
+        for (let i = 0; i < splitPoints.length; i++) {
+            const start = splitPoints[i].position;
+            const end = (i + 1 < splitPoints.length) ? splitPoints[i + 1].position : text.length;
+            const segment = text.substring(start, end).trim();
+
+            if (segment.length > 0) {
+                segments.push(segment);
+            }
+        }
+
+        return segments.length > 0 ? segments : [text];
     }
-    
+
     return [];
-}	
+}
+
+// FUNCIÓN DE PRUEBA - Ejecuta en consola: probarDivisionEspacios()
+function probarDivisionEspacios() {
+    console.log('🧪 === PRUEBA DE DIVISIÓN DE ESPACIOS ===\n');
+
+    // Encontrar contacto de ejemplo (Jhozman)
+    const contactoEjemplo = contacts.find(c => c.punto_focal?.includes('Jhozman'));
+
+    if (contactoEjemplo) {
+        console.log('📋 Contacto de prueba:', contactoEjemplo.punto_focal);
+        console.log('📝 Campo original:', contactoEjemplo.espacio_coordinacion);
+        console.log('\n🔪 División en array:');
+
+        const espaciosArray = getEspaciosAsArray(contactoEjemplo.espacio_coordinacion);
+        espaciosArray.forEach((espacio, i) => {
+            console.log(`   ${i + 1}. "${espacio}"`);
+        });
+
+        console.log('\n✅ Total de espacios:', espaciosArray.length);
+    } else {
+        console.log('⚠️ No se encontró contacto de ejemplo');
+    }
+
+    // Probar también con todos los espacios únicos
+    console.log('\n📊 Todos los espacios únicos en el sistema:');
+    const todosLosEspacios = new Set();
+    contacts.forEach(c => {
+        getEspaciosAsArray(c.espacio_coordinacion).forEach(e => todosLosEspacios.add(e));
+    });
+
+    Array.from(todosLosEspacios).sort().forEach((e, i) => {
+        console.log(`   ${i + 1}. "${e}"`);
+    });
+
+    return Array.from(todosLosEspacios).sort();
+}
+
 function downloadEmailList(emails) {
     const content = `Lista de Correos Electrónicos - OCHA Maracaibo
 Fecha: ${new Date().toLocaleDateString('es-ES')}
