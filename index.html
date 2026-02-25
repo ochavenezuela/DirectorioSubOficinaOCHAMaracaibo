@@ -3990,17 +3990,8 @@ async function saveGroup() {
         return;
     }
     
-    // Límite máximo: 70 correos
-    if (emails.length <= 70) {
-        const emailList = emails.join(';');
-        const subject = encodeURIComponent('Comunicación OCHA Maracaibo');
-        const body = encodeURIComponent('Estimados colegas,\n\n\n\nSaludos cordiales,\nSub Oficina OCHA Maracaibo');
-        window.open(`mailto:${emailList}?subject=${subject}&body=${body}`);
-        showAppMessage(`✅ Abriendo cliente de correo con ${emails.length} destinatarios`, 'success');
-    } else {
-        // Para más de 70 correos, mostrar modal para copiar
-        showEmailCopyModal(emails);
-    }
+    // Mostrar siempre el modal para copiar la lista de correos
+    showEmailCopyModal(emails);
 }
 
         function sendWhatsAppToSelection() {
@@ -5305,8 +5296,7 @@ createKPICard(kpiGrid, { icon: 'fa-th-list', value: sectoresEnUso.size, label: '
             <div class="modal-body">
                 <div class="email-notice">
                     <i class="fas fa-info-circle"></i>
-                    <strong>Lista grande:</strong> ${emails.length} correos electrónicos seleccionados.
-                    <br>El límite máximo para abrir directamente es 70 correos.
+                    <strong>Lista de correos:</strong> ${emails.length} correos electrónicos seleccionados.
                 </div>
                 
                 <div style="display: flex; justify-content: space-between; align-items: center; margin: 1.5rem 0 1rem;">
