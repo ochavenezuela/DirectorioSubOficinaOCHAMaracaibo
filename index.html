@@ -3746,7 +3746,7 @@ function updateSelectionButtons() {
 async function saveGroup() {
             const groupName = document.getElementById('groupName').value.trim();
             const groupDescription = document.getElementById('groupDescription').value.trim();
-            
+
             if (!groupName) {
                 const groupModalMessage = document.getElementById('groupModalMessage');
                 groupModalMessage.textContent = 'El nombre del grupo es obligatorio.';
@@ -3756,7 +3756,21 @@ async function saveGroup() {
             }
 
             try {
-                const selectedContactsArray = Array.from(selectedContacts).map(id => 
+                // Verificar duplicados antes de crear
+                const { data: existing } = await sb
+                    .from('contact_groups')
+                    .select('id, name')
+                    .ilike('name', groupName);
+
+                if (existing && existing.length > 0) {
+                    const groupModalMessage = document.getElementById('groupModalMessage');
+                    groupModalMessage.textContent = `Ya existe un grupo llamado "${existing[0].name}". Para añadir miembros usa el botón Editar.`;
+                    groupModalMessage.className = 'status-message status-error';
+                    groupModalMessage.style.display = 'block';
+                    return;
+                }
+
+                const selectedContactsArray = Array.from(selectedContacts).map(id =>
                     contacts.find(c => c.id === id)
                 ).filter(Boolean);
 
@@ -3873,6 +3887,16 @@ async function saveGroup() {
 
         // NUEVO: Crear nuevo grupo
         async function createNewGroup(name, description, memberIds) {
+            // Verificar si ya existe un grupo con el mismo nombre (insensible a mayúsculas y acentos)
+            const { data: existing } = await sb
+                .from('contact_groups')
+                .select('id, name')
+                .ilike('name', name);
+
+            if (existing && existing.length > 0) {
+                throw new Error(`Ya existe un grupo llamado "${existing[0].name}". Para añadir miembros usa el botón Editar.`);
+            }
+
             // 1. Crear el grupo
             const { data: newGroup, error: groupError } = await sb
                 .from('contact_groups')
