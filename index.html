@@ -4200,7 +4200,7 @@ async function saveGroup() {
             });
             
             // Establecer checkboxes de multi-selección para Espacios
-            const contactEspacios = (contact.espacio_coordinacion || '').split(',').map(e => e.trim());
+            const contactEspacios = getEspaciosAsArray(contact.espacio_coordinacion);
             document.querySelectorAll('#espaciosMultiSelect input[type="checkbox"]').forEach(checkbox => {
                 checkbox.checked = contactEspacios.includes(checkbox.value);
             });
@@ -5549,6 +5549,23 @@ async function confirmDeleteGroup() {
 // - Escalable para grandes volúmenes
 // ========================================
 
+// Normaliza variantes sin acento / con "de" extra al nombre canónico con acento
+function normalizeEspacioName(name) {
+    if (!name) return name;
+    const n = name.trim();
+    const map = {
+        'Foro Local de Coordinacion Zulia':        'Foro Local de Coordinación Zulia',
+        'Foro Local de Coordinacion Falcon':        'Foro Local de Coordinación Falcón',
+        'Grupo de Coordinacion Sur del Lago':       'Grupo de Coordinación Sur del Lago',
+        'Grupo de Coordinacion de Sur del Lago':    'Grupo de Coordinación Sur del Lago',
+        'Grupo de Coordinacion Trujillo':           'Grupo de Coordinación Trujillo',
+        'Grupo de Coordinacion de Trujillo':        'Grupo de Coordinación Trujillo',
+        'Grupo de Coordinacion Lara':               'Grupo de Coordinación Lara',
+        'Grupo de Coordinacion de Lara':            'Grupo de Coordinación Lara',
+    };
+    return map[n] !== undefined ? map[n] : n;
+}
+
 // Función para obtener espacios de coordinación como array
 function getEspaciosAsArray(espacioString) {
     if (!espacioString) return [];
@@ -5556,7 +5573,7 @@ function getEspaciosAsArray(espacioString) {
     if (typeof espacioString === 'string') {
         // Si tiene comas, dividir por comas (datos nuevos)
         if (espacioString.includes(',')) {
-            return espacioString.split(',').map(e => e.trim()).filter(e => e.length > 0);
+            return espacioString.split(',').map(e => normalizeEspacioName(e.trim())).filter(e => e.length > 0);
         }
 
         // Si NO tiene comas, dividir por patrones conocidos (datos legacy)
@@ -5564,7 +5581,7 @@ function getEspaciosAsArray(espacioString) {
 
         // Si el texto es corto (menos de 50 chars), probablemente es un solo valor
         if (text.length < 50) {
-            return [text];
+            return [normalizeEspacioName(text)];
         }
 
         // Encontrar todas las posiciones donde inician los patrones conocidos
@@ -5592,7 +5609,7 @@ function getEspaciosAsArray(espacioString) {
 
         // Si no encontramos puntos de división, retornar el texto completo
         if (splitPoints.length === 0) {
-            return [text];
+            return [normalizeEspacioName(text)];
         }
 
         // Ordenar por posición
@@ -5606,14 +5623,42 @@ function getEspaciosAsArray(espacioString) {
             const segment = text.substring(start, end).trim();
 
             if (segment.length > 0) {
-                segments.push(segment);
+                segments.push(normalizeEspacioName(segment));
             }
         }
 
-        return segments.length > 0 ? segments : [text];
+        return segments.length > 0 ? segments : [normalizeEspacioName(text)];
     }
 
     return [];
+}
+
+// Migra todos los contactos en BD para usar nombres canónicos con acento y separador coma
+// Ejecutar una sola vez desde consola: await migrateEspacioData()
+async function migrateEspacioData() {
+    console.log('Iniciando migración de espacios de coordinación...');
+    const { data: allContacts, error } = await sb.from('contacts').select('id, espacio_coordinacion');
+    if (error) { console.error('Error al cargar contactos:', error); return; }
+
+    let updated = 0, skipped = 0, failed = 0;
+    for (const contact of allContacts) {
+        const original = contact.espacio_coordinacion;
+        if (!original) { skipped++; continue; }
+        const normalized = getEspaciosAsArray(original).join(', ');
+        if (normalized === original) { skipped++; continue; }
+        const { error: updateError } = await sb
+            .from('contacts')
+            .update({ espacio_coordinacion: normalized })
+            .eq('id', contact.id);
+        if (updateError) {
+            console.error(`Error en id=${contact.id}:`, updateError.message);
+            failed++;
+        } else {
+            console.log(`Actualizado id=${contact.id}: "${original}" → "${normalized}"`);
+            updated++;
+        }
+    }
+    console.log(`Migración completa: ${updated} actualizados, ${skipped} sin cambios, ${failed} errores.`);
 }
 
 // FUNCIÓN DE PRUEBA - Ejecuta en consola: probarDivisionEspacios()
@@ -5757,7 +5802,7 @@ function showMagicLinkMassiveModal(contactsWithEmail) {
 
 Saludos desde la Sub Oficina OCHA Maracaibo.
 
-Le escribimos desde la organización {ORGANIZACION} para solicitar que actualice su información de contacto en nuestro directorio humanitario.
+Le escribimos en la oportunidad de que su organización: {ORGANIZACION} por favor actualice su información de contacto en nuestro directorio humanitario.
 
 Para actualizar su información de manera segura, haga clic en el siguiente enlace:
 
